@@ -123,7 +123,7 @@ class Tag:
             for cont in self.contents:
                 if len(found_list) == limit:
                     return found_list
-                found_list.extend(cont.__find(name, limit, **kwargs))
+                found_list.extend(cont._find_tag(name, limit, **kwargs))
         return found_list
 
     def _find(self, name, limit, attrs, **kwargs):
@@ -683,11 +683,14 @@ class Compile:
 
     def figure(self, tag, sibling):
         """处理figure标签，图片"""
-        img = tag.find('img')
+        img = tag.find('img', _class='origin_image zh-lightbox-thumb lazy')
         try:
             url = img['original']
         except AttributeError:
-            url = img['src']
+            url = img['actualsrc']
+        if not re.match(r'^https?', img['src']):
+        	# 判断是否是gif照片
+            url = re.sub(r'\.[a-z]+$', '.gif', url)
         return Tag('figure', contents=[Tag('img', attrs={'src': url}), tag.find('figcaption')])
 
     def img_(self, tag, sibling):

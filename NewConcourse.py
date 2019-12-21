@@ -16,7 +16,10 @@ Config.CONF.setting('running/style', 0)
 # 爬取结果保存在“桌面\zhihuSpider\answer”
 
 import os
-os.path.join(os.path.expanduser('~'), r'Desktop\zhihuSpider')
-Config.CON.setting('~answer')
+main_path = os.path.join(os.path.expanduser('~'), r'Desktop\zhihuSpider')
+# 设置主目录
+Config.CON.warehouse(main_path)
+# 设置子目录，最终会保存在“桌面\zhihuSpider\answer”
+Config.CONF.warehouse('~answer')
 zhihu.start(r'https://www.zhihu.com/question/361816953/answer/942081119')
 # #################### demo ####################

@@ -49,7 +49,7 @@ class QuestionMange:
             if self.totals == 1:
                 self.totals = rjs['paging']['totals']
             self.increase(len(rjs['data']))
-            timer.random_sleep(end=zc.SLEEP)
+            timer.sleep_for(zc.SLEEP)
         self.batch_size = 0
 
     def get_answer(self, selective=True):

@@ -97,7 +97,7 @@ class ColumnMange:
                     finish = article2html(each_id)
                 else:
                     finish = article2md(each_id)
-                timer.random_sleep(end=zc.SLEEP)
+                timer.sleep_for(zc.SLEEP)
                 if finish is True:
                     amount += 1
                     article_ids[each_id] = True

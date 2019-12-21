@@ -114,7 +114,7 @@ class ColumnMange:
             self.increase(len(ids))
             id_list.extend(ids)
             print(self.next_offset(), zc.GET_ARTICLES_ID)
-            timer.random_sleep(end=zc.SLEEP)
+            timer.sleep_for(zc.SLEEP)
         self.update_id_list(id_list)
 
     @zc.catch_error_cls

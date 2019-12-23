@@ -14,9 +14,6 @@ try:
 except AttributeError:
     Config.CONF = Config(r'..\util\conf\config.pkl')
 
-# ############################## start ##############################
-# ############################## start ##############################
-#  定义一些常量，这些常量值可用print函数输出 ########
 GET_ARTICLES_ID = Config.CONF.get_setting('core/GET_ARTICLES_ID')
 SLEEP = Config.CONF.get_setting('core/SLEEP')
 SORT_BY_VOT = Config.CONF.get_setting('core/SORT_BY_VOT')
@@ -36,8 +33,6 @@ ANSWER_URL = Config.CONF.get_setting('core/ANSWER_URL')
 ARTICLE_URL = Config.CONF.get_setting('core/ARTICLE_URL')
 
 STYLE = Config.CONF.get_setting('core/STYLE')  # 0表示生成html，非0表示生成markdown
-# ################################ end ####################################
-# ################################ end ####################################
 
 
 class VerityError(ValueError):
@@ -130,7 +125,7 @@ class Crawler(requests.Session):
 
 
 def catch_error_cls(func):
-	"""捕获VerityError并处理，装饰类方法"""
+    """捕获VerityError并处理，装饰类方法"""
     def catch(self):
         try:
             return func(self)
@@ -142,7 +137,7 @@ def catch_error_cls(func):
 
 
 def catch_error_func(func):
-	"""捕获VerityError并处理，装饰普通函数"""
+    """捕获VerityError并处理，装饰普通函数"""
     def catch(item_id):
         try:
             return func(item_id)
@@ -159,12 +154,12 @@ def handle_error():
 
 
 def format_path(path):
-	"""替换文件路径中的非法字符"""
+    """替换文件路径中的非法字符"""
     return re.sub(r'[\\/:*?"<>|]', '#', path)
 
 
 def file_name(suffix, *part_name):
-	"""返回正确的文件名"""
+    """返回正确的文件名"""
     names = format_path('-'.join(part_name))
     file = os.path.join(Config.CONF.wh(), '%s.%s' % (names, suffix))
     REPETITION = 1
@@ -207,3 +202,5 @@ def item2md_holder(cont, meta):
 
 def show_info(meta):
     print('%5d\t%s\t《%s》' % (meta.voteup, meta.author, meta.title))
+
+

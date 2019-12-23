@@ -4,19 +4,20 @@ import re
 
 class Paper:
     """
-    创建一张高性能的“纸”，它能够高效地管理写入这张“纸”上的文本，
-    可以将str放入一个list中，写入文件时逐个写进文件
+    一张高性能的“纸”，它能够高效地管理写入这张“纸”上的文本，
     """
 
     def __init__(self):
         self.container = list()
 
     def record(self, item: str):
+        """纸张记录内容，向纸上写内容"""
         if not isinstance(item, str):
             raise TypeError('str type is required, not %s' % item.__class__.__name__)
         self.container.append(item)
 
     def save(self, file: str):
+        """保存纸上的内容"""
         try:
             with open(file, 'a+', encoding='utf8') as foo:
                 foo.truncate(0)
@@ -27,9 +28,11 @@ class Paper:
             self.save(file)
 
     def show(self):
+        """展示纸上的内容"""
         print(str(self))
 
     def clear(self):
+        """清空纸上的内容"""
         self.container.clear()
 
     def __str__(self):
@@ -52,7 +55,7 @@ class Tag:
     SELF_CLOSING = ['img', 'link', 'br', 'hr', 'meta']
 
     def __init__(self, name, attrs: dict = None, contents: list = None, string: str = None,
-                 indent: int = True):
+                 indent: bool = True):
         """
         :param name: 标签名称，如div
         :param attrs: 标签属性
@@ -70,9 +73,8 @@ class Tag:
             self.add(*contents)
         if name is None:
             self._string = string
-        else:
-            if string is not None:
-                self.contents.append(Tag(None, string=string, indent=indent))
+        elif string is not None:
+           self.add(Tag(None, string=string, indent=indent))
         self.to_indent = indent
 
     def write_down(self, paper, indent=0):
@@ -689,7 +691,6 @@ class Compile:
         except AttributeError:
             url = img['actualsrc']
         if not re.match(r'^https?', img['src']):
-        	# 判断是否是gif照片
             url = re.sub(r'\.[a-z]+$', '.gif', url)
         return Tag('figure', contents=[Tag('img', attrs={'src': url}), tag.find('figcaption')])
 
@@ -753,19 +754,6 @@ class Compile:
         """移除标签的属性"""
         tag.attrs = dict()
         return tag
-
-    @classmethod
-    def save_images(cls, file):
-        try:
-            with open(file, 'w', encoding='utf8') as foo:
-                foo.write('\n'.join(cls.FIGURE_LIST))
-        except FileNotFoundError:
-            try:
-                os.makedirs(os.path.dirname(file))
-                with open(file, 'w', encoding='utf8') as foo:
-                    foo.write('\n'.join(cls.FIGURE_LIST))
-            except OSError:
-                pass
 
 
 if __name__ == '__main__':

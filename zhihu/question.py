@@ -134,7 +134,7 @@ class QuestionMange:
         return meta
 
     def crawling(self):
-        """配合while结构可以实现爬取所有回答，这里不提供！"""
+        """pass"""
         return self.totals > self.offset
 
     def summary_info(self):
@@ -188,5 +188,6 @@ def answer2html(answer_id):
 
 
 if __name__ == '__main__':
-    # pass
-	pass
+    # answer2html('387103001')
+    a = '\u573a\u5730\u6295\u653e\u7684\u90a3\u4e9b\u5c0f\u4e8b'.decode("unicode-escape")
+    print(a)

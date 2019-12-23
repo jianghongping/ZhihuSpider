@@ -81,7 +81,7 @@ value = 0    # 0表示输出html，非0表示输出markdown
 Config.CONF.setting(key, value)
 ```
 
-- 保存目录，默认`user\文档\zhihuSpider`：
+- 保存目录，默认`文档\zhihuSpider`：
 
 ```python
 key='running/warehouse'

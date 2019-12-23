@@ -48,3 +48,18 @@ __link-card-title__ : 卡片式超链接的题注
     __ref-url__     : 参考文献引用url
    __ref-title__    : 参考文献引用标题
 """
+
+
+if __name__ == '__main__':
+    import re
+
+    tag = open(r'commit\element.html', 'r',
+               encoding='utf8').read()
+    ls = re.findall(r'__[A-Za-z-]+__', tag)
+    max_v = 0
+    for l in ls:
+        max_v = len(l) if len(l) > max_v else max_v
+
+    template = '{:^%d}: ' % max_v
+    for l in ls:
+        print(template.format(l))

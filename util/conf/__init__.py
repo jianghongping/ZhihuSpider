@@ -1,9 +1,6 @@
 import json
 import os
 import pickle
-import re
-
-from util.html import Parsing
 
 
 class Config:

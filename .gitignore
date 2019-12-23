@@ -1,0 +1,15 @@
+*.json
+*.md
+
+## python code
+
+config_tool.py
+
+
+# dir
+data/
+test/
+nmd/
+.idea/
+__pycache__/
+commit/

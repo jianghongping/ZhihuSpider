@@ -74,7 +74,7 @@ class Tag:
         if name is None:
             self._string = string
         elif string is not None:
-           self.add(Tag(None, string=string, indent=indent))
+            self.add(Tag(None, string=string, indent=indent))
         self.to_indent = indent
 
     def write_down(self, paper, indent=0):
@@ -117,15 +117,15 @@ class Tag:
                 s.append(c.string.strip() if strip else c.string)
             return split.join(s)
 
-    def _find_tag(self, name, limit, **kwargs):
+    def find_tag(self, name, limit, **kwargs):
         found_list = list()
         if self.name == name and self._attrs_match(kwargs):
             found_list.append(self)
         else:
-            for cont in self.contents:
+            for tag in self.contents:
                 if len(found_list) == limit:
                     return found_list
-                found_list.extend(cont._find_tag(name, limit, **kwargs))
+                found_list.extend(tag.find_tag(name, limit, **kwargs))
         return found_list
 
     def _find(self, name, limit, attrs, **kwargs):
@@ -136,7 +136,7 @@ class Tag:
         if '_class' in attrs.keys():
             attrs['class'] = attrs['_class']
             del attrs['_class']
-        found_list = self._find_tag(name, limit, **attrs)
+        found_list = self.find_tag(name, limit, **attrs)
         if len(found_list) == 0:
             return None
         return found_list[0] if limit == 1 else found_list
@@ -158,8 +158,16 @@ class Tag:
             return default
 
     def _attrs_match(self, attrs):
+        """多值匹配法检查属性值是否匹配（包含）"""
         for attr, value in attrs.items():
-            if self.attrs.get(attr, None) != value:
+            attr_val = self.attrs.get(attr, None)
+            try:
+                attr_vas = re.split('\s+', attr_val)
+                vas = re.split('\s+', value) if isinstance(value, str) else value
+                for v in vas:
+                    if v not in attr_vas:
+                        return False
+            except AttributeError:
                 return False
         return True
 
@@ -685,11 +693,14 @@ class Compile:
 
     def figure(self, tag, sibling):
         """处理figure标签，图片"""
-        img = tag.find('img', _class='origin_image zh-lightbox-thumb lazy')
+        img = tag.find('img', _class='lazy')
         try:
             url = img['original']
         except AttributeError:
             url = img['actualsrc']
+        except TypeError:
+            # 没找着，返回了None
+            pass
         if not re.match(r'^https?', img['src']):
             url = re.sub(r'\.[a-z]+$', '.gif', url)
         return Tag('figure', contents=[Tag('img', attrs={'src': url}), tag.find('figcaption')])

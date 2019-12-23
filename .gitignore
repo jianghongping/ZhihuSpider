@@ -1,12 +1,12 @@
+# files
 *.json
 *.md
 
-## python code
-
+## python resourse
 config_tool.py
 
 
-# dir
+# dirs
 data/
 test/
 nmd/

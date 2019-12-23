@@ -90,6 +90,7 @@ def verity(func):
 
 
 class Crawler(requests.Session):
+    # TODO 添加保存接送数据的接口
     UA = Config.CONF.get_setting('Crawler/user-agent')
 
     def __init__(self):
@@ -97,7 +98,12 @@ class Crawler(requests.Session):
         self.headers.update(Crawler.UA)
 
     def pull_response(self, url):
-        return self.get(url, timeout=10)
+        response = self.get(url, timeout=10)
+        # if Config.CONF.get_setting('running/saving') is True:
+        #     pass
+        with open('article.json', 'w', encoding='utf8') as foo:
+            foo.write(response.text)
+        return response
 
     @verity
     def article_spider(self, item_id):
@@ -126,6 +132,7 @@ class Crawler(requests.Session):
 
 def catch_error_cls(func):
     """捕获VerityError并处理，装饰类方法"""
+
     def catch(self):
         try:
             return func(self)
@@ -138,6 +145,7 @@ def catch_error_cls(func):
 
 def catch_error_func(func):
     """捕获VerityError并处理，装饰普通函数"""
+
     def catch(item_id):
         try:
             return func(item_id)
@@ -182,6 +190,9 @@ def item2html_holder(cont, meta):
         meta.title
     )
     html.add_to_article('hed', h)
+    if meta.background is not None:
+        bgg = tg.article_figure(meta.background)
+        html.add_to_article('bgg', bgg)
     content_list = uh.Parsing().parse_tag(cont)
     uhc = uh.Compile(content_list, tg)
     html.add(*uhc.compile())
@@ -202,5 +213,3 @@ def item2md_holder(cont, meta):
 
 def show_info(meta):
     print('%5d\t%s\t《%s》' % (meta.voteup, meta.author, meta.title))
-
-

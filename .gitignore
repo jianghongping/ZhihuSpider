@@ -1,6 +1,7 @@
 # files
 *.json
 *.md
+config.pkl
 
 ## python resourse
 config_tool.py

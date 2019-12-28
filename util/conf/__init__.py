@@ -92,6 +92,14 @@ class Config:
             return
         self.setting('running/warehouse', path)
 
+    def cached_warehouse(self):
+        path = os.path.join(self.default_wh(), 'cached')
+        try:
+            assert os.path.exists(path)
+        except AssertionError:
+            os.makedirs(path)
+        return path
+
     def warehouse(self, path=None):
         if path is None:
             try:
@@ -101,6 +109,8 @@ class Config:
         self._warehouse(path)
         # 设置完了返回给调用的地方
         return self.warehouse()
+
+    wh = warehouse
 
     @classmethod
     def _get_setting(cls, region, key):
@@ -115,5 +125,3 @@ class Config:
             return region
         except KeyError:
             raise KeyError('There is no setting option named %s.' % key)
-
-    wh = warehouse

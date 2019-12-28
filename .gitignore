@@ -1,7 +1,6 @@
 # files
 *.json
 *.md
-config.pkl
 
 ## python resourse
 config_tool.py
@@ -15,3 +14,5 @@ nmd/
 __pycache__/
 commit/
 pic/
+pygments/
+util/html/code_styles/

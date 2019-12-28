@@ -7,6 +7,7 @@ from requests import HTTPError
 
 import util.html as uh
 import util.md as umd
+from util import timer
 from util.conf import Config
 
 try:
@@ -89,6 +90,23 @@ def verity(func):
     return verity_deco
 
 
+def cached(func):
+    def cached_func(self, *args, **kwargs):
+        res = func(self, *args, **kwargs)
+        if Config.CONF.get_setting('running/saving') is True:
+            itd = kwargs.get('item_id', args[0])
+            try:
+                ofs = kwargs.get('offset', args[1])
+            except IndexError:
+                ofs = timer.timestamp_str()
+            file = os.path.join(Config.CONF.cached_warehouse(), '%s-%s.json' % (itd, ofs))
+            with open(file, 'w', encoding='utf8') as foo:
+                foo.write(res.text)
+        return res
+
+    return cached_func
+
+
 class Crawler(requests.Session):
     # TODO 添加保存接送数据的接口
     UA = Config.CONF.get_setting('Crawler/user-agent')
@@ -97,35 +115,31 @@ class Crawler(requests.Session):
         super().__init__()
         self.headers.update(Crawler.UA)
 
-    def pull_response(self, url):
-        response = self.get(url, timeout=10)
-        # if Config.CONF.get_setting('running/saving') is True:
-        #     pass
-        with open('article.json', 'w', encoding='utf8') as foo:
-            foo.write(response.text)
-        return response
-
     @verity
+    def pull_response(self, url):
+        return self.get(url, timeout=10)
+
+    @cached
     def article_spider(self, item_id):
         return self.pull_response(API.article_api(item_id))
 
-    @verity
+    @cached
     def column_spider(self, item_id, offset):
         return self.pull_response(API.columns_article_api(item_id, offset, 20))
 
-    @verity
+    @cached
     def answer_spider(self, item_id):
         return self.pull_response(API.answer_api(item_id))
 
-    @verity
+    @cached
     def question_spider(self, item_id, offset):
         return self.pull_response(API.all_answers_api(item_id, 20, offset, SORT_BY_VOT))
 
-    @verity
+    @cached
     def column_msg_spider(self, item_id):
         return self.pull_response(API.columns_msg_api(item_id))
 
-    @verity
+    @cached
     def question_msg_spider(self, item_id):
         return self.pull_response(API.question_msg_api(item_id))
 
@@ -179,28 +193,8 @@ def file_name(suffix, *part_name):
 
 
 def item2html_holder(cont, meta):
-    html = uh.Mushroom(meta.title, Config.CONF)
-    tg = uh.TagGenerate(Config.CONF)
-    h = tg.article_header(
-        meta.original_url,
-        meta.author_avatar_url,
-        meta.author,
-        meta.author_page,
-        meta.created_date,
-        meta.title
-    )
-    html.add_to_article('hed', h)
-    if meta.background is not None:
-        bgg = tg.article_figure(meta.background)
-        html.add_to_article('bgg', bgg)
-    content_list = uh.Parsing().parse_tag(cont)
-    uhc = uh.Compile(content_list, tg)
-    html.add(*uhc.compile())
-    html.add_optional_style(uhc.style_meta)
-    p = uh.Paper()
-    html.write_down(p)
-    file = file_name('html', meta.author, meta.title)
-    p.save(file)
+    p = uh.Compile(cont).compile(meta, uh.Mushroom(meta.title)).write_down(uh.Paper())
+    p.save(file_name('html', meta.author, meta.title))
     show_info(meta)
 
 

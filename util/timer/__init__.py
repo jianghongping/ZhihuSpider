@@ -15,7 +15,6 @@ def random_sleep(begin=None, end=None):
 
 
 def sleep_for(second):
-    print('sleeping...')
     for i in range(second):
         time.sleep(1)
 
@@ -42,3 +41,4 @@ def timestamp_str():
 if __name__ == '__main__':
     s = timestamp_to_date(ft='%Y-%m-%d')
     print(s)
+    print(timestamp_str())

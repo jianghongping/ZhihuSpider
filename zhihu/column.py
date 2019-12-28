@@ -97,7 +97,7 @@ class ColumnMange:
                     finish = article2html(each_id)
                 else:
                     finish = article2md(each_id)
-                timer.sleep_for(zc.SLEEP)
+                timer.random_sleep(end=zc.SLEEP)
                 if finish is True:
                     amount += 1
                     article_ids[each_id] = True
@@ -114,7 +114,7 @@ class ColumnMange:
             self.increase(len(ids))
             id_list.extend(ids)
             print(self.next_offset(), zc.GET_ARTICLES_ID)
-            timer.sleep_for(zc.SLEEP)
+            timer.random_sleep(end=zc.SLEEP)
         self.update_id_list(id_list)
 
     @zc.catch_error_cls

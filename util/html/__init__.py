@@ -1,6 +1,12 @@
 import os
 import re
 
+from pygments import highlight
+from pygments.formatters.html import HtmlFormatter
+from pygments.lexers import get_lexer_by_name
+
+from util.conf import Config
+
 
 class Paper:
     """
@@ -59,7 +65,7 @@ class Tag:
         """
         :param name: 标签名称，如div
         :param attrs: 标签属性
-        :param contents: 标签内容，一般通过.add()添加
+        :param contents: 标签内容，一般通过.push()添加
         :param string: 字符串，用于创建名字为None的字符串标签，或者普通标签的字符串content
         :param indent: .write（）时是否缩进，默认True，主要用于<code><pre>
         """
@@ -70,11 +76,11 @@ class Tag:
         self.attrs = dict() if attrs is None else attrs
         self.contents = list()
         if contents is not None:
-            self.add(*contents)
+            self.push(*contents)
         if name is None:
             self._string = string
         elif string is not None:
-            self.add(Tag(None, string=string, indent=indent))
+            self.push(Tag(None, string=string, indent=indent))
         self.to_indent = indent
 
     def write_down(self, paper, indent=0):
@@ -88,8 +94,9 @@ class Tag:
             c.write_down(paper, indent + 1)
         if self.name not in self.SELF_CLOSING:
             paper.record('%s</%s>\n' % (padding, self.name))
+        return paper
 
-    def add(self, *items):
+    def push(self, *items):
         # 在Compile过程中由于Compile.a()的需要，
         # 它返回的是None，这里做一个对象检测也是可以的
         for item in items:
@@ -128,7 +135,7 @@ class Tag:
                 found_list.extend(tag.find_tag(name, limit, **kwargs))
         return found_list
 
-    def _find(self, name, limit, attrs, **kwargs):
+    def find(self, name, attrs=None, **kwargs):
         try:
             attrs.updata(kwargs)
         except AttributeError:
@@ -136,26 +143,14 @@ class Tag:
         if '_class' in attrs.keys():
             attrs['class'] = attrs['_class']
             del attrs['_class']
-        found_list = self.find_tag(name, limit, **attrs)
-        if len(found_list) == 0:
+
+        try:
+            return self.find_tag(name, 1, **attrs)[0]
+        except IndexError:
             return None
-        return found_list[0] if limit == 1 else found_list
-
-    def find(self, name, attrs=None, **kwargs):
-        return self._find(name, limit=1, attrs=attrs, **kwargs)
-
-    def find_all(self, name, attrs=None, **kwargs):
-        return self._find(name, limit=-1, attrs=attrs, **kwargs)
-
-    def not_empty(self):
-        return True if self.name in ('br', 'hr') else not (
-                len(self.contents) == 0 and self.string == '')
 
     def get_attrs(self, item, default=None):
-        try:
-            return self[item]
-        except AttributeError:
-            return default
+        return self.attrs.get(item, default)
 
     def _attrs_match(self, attrs):
         """多值匹配法检查属性值是否匹配（包含）"""
@@ -167,7 +162,7 @@ class Tag:
                 for v in vas:
                     if v not in attr_vas:
                         return False
-            except AttributeError:
+            except (AttributeError, TypeError):
                 return False
         return True
 
@@ -184,216 +179,6 @@ class Tag:
 
     def __len__(self):
         return len(self.contents)
-
-    def __getitem__(self, key):
-        try:
-            return self.attrs[key]
-        except KeyError:
-            raise AttributeError('%s tag no attribute named %s' % (self.name, key))
-
-
-class Bowl:
-    def __init__(self, bgg=None, hed=None, tex=None, div=None):
-        self.bgg = bgg
-        self.hed = hed
-        self.tex = tex
-        self.div = div
-
-    def clear(self):
-        self.__init__()
-
-    def is_empty(self):
-        judge = 0
-        for val in self.__dict__.values():
-            if val is not None:
-                judge += 1
-        return judge == 0
-
-    def __iter__(self):
-        ls = (self.bgg, self.hed, self.tex)
-        for i in ls:
-            if i is not None:
-                yield i
-
-    def setattr(self, key, value):
-        self.__setattr__(key, value)
-
-    def __setattr__(self, key, value):
-        if key in ('bgg', 'tex', 'hed', 'div'):
-            self.__dict__[key] = value
-        else:
-            raise AttributeError('Bowl class not have "%s" attribute.' % key)
-
-
-class Mushroom(Tag):
-
-    def __init__(self, title, config):
-        super().__init__('html', attrs={'lang': 'zh'})
-        self._head = Tag('head')
-        self._head.contents.append(Tag('title', string=title))
-        self.title = title
-        for tag in config.get_setting('head/essential').values():
-            self.add_tag_to_head(tag)
-        # 为body添加<div id=write>标签，现在不能使用self.add()添加
-        self._body = Tag('body')
-        self.contents.append(self._head)
-        self.contents.append(self._body)
-        self.cur_art = None
-        self.bwl = Bowl()
-        self.new_article(divide=False)
-        self._parsing = Parsing()
-        self.words = 0
-        self.media = 0
-        self._config = config
-
-    def add_tag_to_head(self, tag):
-        """添加用字典表示的标签到HTML的head标签"""
-        self._head.contents.append(
-            Tag(tag['name'], attrs=tag.get('attrs', {}),
-                string=tag.get('string', None))
-        )
-
-    def add_optional_style(self, style_meta):
-        """动态添加css样式"""
-        # 比如包含代码内容的HTML就需要添加代码样式的css，而不包含代内容的就不需要，因而动态。
-        try:
-            for style in style_meta:
-                self.add_tag_to_head(self._config.get_setting('head/optional/%s' % style))
-        except KeyError:
-            pass
-
-    def new_article(self, divide=True):
-        """
-        html: new_article() 新建一篇文章，并添加到 body content，
-        添加新文章必须使用这个方法，构造HTML时会默认创建一篇
-
-        新建文章时会检查self.bwl 是否为空，如果不是就先将它“清空”再创建新文章
-        """
-        self._merge()
-        if divide:
-            self.bwl.div = Tag('div', attrs={'class': 'divide'})
-        self.cur_art = Tag('div', attrs={'class': 'article'})
-
-    def _merge(self):
-        if not self.bwl.is_empty():
-            self.cur_art.add(self.bwl.bgg, self.bwl.hed, self.bwl.tex)
-        self._body.add(self.bwl.div, self.cur_art)
-        self.bwl.clear()
-
-    def write_down(self, paper, indent=0):
-        self._merge()
-        paper.record('<!DOCTYPE html>\n')
-        super().write_down(paper)
-
-    def add(self, *items):
-        if self.bwl.tex is None:
-            self.bwl.tex = Tag('div', attrs={'class': 'text'})
-        self.bwl.tex.add(*items)
-
-    def add_to_article(self, name, tag):
-        try:
-            self.bwl.setattr(name, tag)
-        except AttributeError:
-            raise ValueError('object %s is not expect.' % name)
-
-
-class TagGenerate:
-    """依据模板和数据生成html标签"""
-
-    @classmethod
-    def generate_tag_by_template(cls, template, marks_value=None, **kwargs):
-        try:
-            marks_value.update(kwargs)
-        except AttributeError:
-            marks_value = kwargs
-        return Parsing().parse_tmp(template, marks_value)[0]
-
-    def __init__(self, config):
-        self._config = config
-        self.parsing = Parsing()
-
-    def template(self, name):
-        try:
-            return self._config.get_setting('tag/%s' % name)
-        except KeyError:
-            raise KeyError('not find template named %s.' % name)
-
-    @classmethod
-    def generate_tag_by_describe(cls, top_tag_name, contents_name, contents_attrs, contents_str,
-                                 **kwargs):
-        """以top_tag为顶层标签描述性地生成html标签"""
-        # 不好描述
-        # 没有需求
-        # 缺乏灵活性
-        pass
-
-    def _generate_tag_by_template(self, template, marks_value=None, **kwargs):
-        try:
-            marks_value.update(kwargs)
-        except AttributeError:
-            marks_value = kwargs
-        return self.parsing.parse_tmp(template, marks_value)[0]
-
-    def link_card(self, url, title, img=None):
-        try:
-            domain = re.search('target=https?%3A//([^/]+)', url).group(1)
-        except AttributeError:
-            domain = re.search('https?://([^/]+)', url).group(1)
-        mas_val = {
-            'domain': domain,
-            'link-card-image': img if img is not None else '',
-            'link-card-url': url,
-            'link-card-title': title
-        }
-        name = 'lc_img' if img is not None else 'lc_svg'
-        return self._generate_tag_by_template(self.template(name), marks_value=mas_val)
-
-    def article_header(self, original_article_link, user_avatar, user_name, user_link, created_date,
-                       title):
-        mas_val = {'article-origin': original_article_link,
-                   'user-avatar': user_avatar,
-                   'user-name': user_name,
-                   'user-link': user_link,
-                   'created-date': created_date,
-                   'title': title
-                   }
-        return self._generate_tag_by_template(self.template('header'), marks_value=mas_val)
-
-    def article_figure(self, img_link):
-        mas_val = {'background-image': img_link}
-        return self._generate_tag_by_template(self.template('bgg'), marks_value=mas_val)
-
-    def video_box(self, video_link, cover_link, tip=None):
-        # TODO 针对有无视频标题做两套video box
-        mas_val = {'video-link': video_link,
-                   'video-cover': cover_link,
-                   'video-tip': '点击封面可观看视频!' if tip is None else '%s，%s' % (tip, '点击封面可观看视频!')
-                   }
-        return self._generate_tag_by_template(self.template('video'), marks_value=mas_val)
-
-    def reference_index(self, index):
-        return self._generate_tag_by_template(self.template('ref_ind'), {'index': str(index)})
-
-    def reference(self, index, ref_title, ref_url):
-        mas_val = {
-            'index': str(index),
-            'ref-url': ref_url,
-            'ref-title': ref_title
-        }
-        return self._generate_tag_by_template(self.template('quo'), mas_val)
-
-    def reference_table(self, ref_title_url):
-        table = Tag('table', attrs={'class': 'reference'})
-        index = 1
-        for title, url in ref_title_url:
-            table.add(
-                self.reference(
-                    index=index,
-                    ref_title=title if title != '' else url,
-                    ref_url=url)
-            )
-            index += 1
-        return table
 
 
 def wrapper_handle_attrs(func):
@@ -506,7 +291,11 @@ class Parsing:
 
     def restore(self):
         """还原Parsing到初始状态"""
-        self.__init__()
+        self._ofs = 0
+        self._marks_value = dict()
+        self._contents_list = list()
+        self._stack = list()
+        self._tag = ''
 
     def arouse_error(self, max_loop):
         """检查解析过程是否正常，不正常将引发ValueError"""
@@ -597,14 +386,14 @@ class Parsing:
             cd = re.match(self.code_reg, self._tag[self._ofs:])
             if bool(cd):
                 self._ofs += cd.end()
-                n.add(Tag(None, string=cd.group(), indent=False))
+                n.push(Tag(None, string=cd.group(), indent=False))
         elif n.name in ('code', 'pre'):
             cof = self._ofs - r.end()
             cd = re.match(self.code_reg, self._tag[cof:])
             if bool(cd):
                 self._ofs = cof + cd.end() - len('</%s>' % n.name)
                 stg = re.sub('</?%s[^<>]*?>' % n.name, '', cd.group())
-                n.add(Tag(None, string=stg, indent=False))
+                n.push(Tag(None, string=stg, indent=False))
 
     def handle_start(self, r, make_attrs):
         """处理起始标签"""
@@ -615,7 +404,7 @@ class Parsing:
             if len(self._stack) == 0:
                 self._contents_list.append(n)
             else:
-                self._stack[-1][0].add(n)
+                self._stack[-1][0].push(n)
         else:
             n = Tag(r.group(1), attrs=make_attrs(r.group(2)))
             self.handle_code(n, r)
@@ -625,7 +414,7 @@ class Parsing:
             if len(self._stack) == 0:
                 self._stack.append((n, 1))
             else:
-                self._stack[-1][0].add(n)
+                self._stack[-1][0].push(n)
                 self._stack.append((n, 0))
 
     @except_handle_string
@@ -636,7 +425,7 @@ class Parsing:
         if len(self._stack) == 0:
             self._contents_list.append(n)
         else:
-            self._stack[-1][0].add(n)
+            self._stack[-1][0].push(n)
 
     @wrapper_handle_attrs
     def handle_attrs_val_tmp(self, attrs_val):
@@ -649,69 +438,187 @@ class Parsing:
         return attrs_val[1].strip()
 
 
-class Compile:
-    FIGURE_LIST = list()
+class TagGenerate(Parsing):
+    """依据模板和数据生成html标签"""
 
-    def __init__(self, contents_list: list, tag_generate):
-        self._cl = contents_list
-        self._parsing = Parsing()
-        self.tag_generate = tag_generate
-        self._ref_list = list()
-        self._ref_ind = 1
-        self._style_meta = set()
+    def __init__(self):
+        super(TagGenerate, self).__init__()
+        try:
+            self.CONFIG = Config.init()
+        except AttributeError:
+            self.CONFIG = Config('../conf/config.pkl')
+
+    def template(self, name):
+        try:
+            return self.CONFIG.get_setting('tag/%s' % name)
+        except KeyError:
+            raise KeyError('not find template named %s.' % name)
+
+    def generate_tag_by_template(self, template, marks_value=None):
+        return self.parse_tmp(template, marks_value)[0]
+
+    def link_card(self, url, title, img=None):
+        try:
+            domain = re.search('target=https?%3A//([^/]+)', url).group(1)
+        except AttributeError:
+            domain = re.search('https?://([^/]+)', url).group(1)
+        mas_val = {
+            'domain': domain,
+            'link-card-image': img if img is not None else '',
+            'link-card-url': url,
+            'link-card-title': title
+        }
+        name = 'lc_img' if img is not None else 'lc_svg'
+        return self.generate_tag_by_template(self.template(name), marks_value=mas_val)
+
+    def article_text(self, *conts):
+        return Tag('div', attrs={'class': 'text'}, contents=list(conts))
+
+    def article_tile(self, meta):
+
+        mas_val = {'article-origin': meta.original_url,
+                   'user-avatar': meta.author_avatar_url,
+                   'user-name': meta.author,
+                   'user-link': meta.author_page,
+                   'created-date': meta.created_date,
+                   'title': meta.title,
+                   'background-image': meta.background
+                   }
+        title = self.generate_tag_by_template(self.template('header'), marks_value=mas_val)
+        if not (meta.background is None or meta.background == ''):
+            title.contents.insert(0, self.generate_tag_by_template(self.template('bgg'),
+                                                                   marks_value=mas_val))
+        return title
+
+    def video_box(self, video_link, cover_link, tip=None):
+        # TODO 针对有无视频标题做两套video box
+        mas_val = {'video-link': video_link,
+                   'video-cover': cover_link,
+                   'video-tip': '点击封面可观看视频!' if tip is None else '%s，%s' % (tip, '点击封面可观看视频!')
+                   }
+        return self.generate_tag_by_template(self.template('video'), marks_value=mas_val)
+
+    def reference_index(self, index):
+        return self.generate_tag_by_template(self.template('ref_ind'), {'index': str(index)})
+
+    def reference_table(self, ref_title_url):
+        table = Tag('table', attrs={'class': 'reference'})
+        index = 1
+        for title, url in ref_title_url:
+            mas_val = {
+                'index': str(index),
+                'ref-url': url,
+                'ref-title': title
+            }
+            table.push(self.generate_tag_by_template(self.template('quo'), mas_val))
+            index += 1
+        return table
+
+
+class Mushroom(Tag):
+
+    def __init__(self, web_title):
+        Tag.__init__(self, 'html', attrs={'lang': 'zh'})
+        self.head = Tag('head')
+        self.body = Tag('body')
+        self.feed_head(Tag('meta', attrs={'charset': 'UTF-8'}))
+        self.feed_head(Tag('title', string=web_title))
+        self.push(self.head, self.body)
+        self.title = None
+        self.text = None
+        self.new_article()
 
     @property
-    def style_meta(self):
-        return self._style_meta
+    def article(self):
+        try:
+            return self.body.contents[-1]
+        except IndexError:
+            self.new_article()
+            return self.article
 
-    def compile(self):
+    def feed_head(self, tag: Tag):
+        self.head.push(tag)
+
+    def feed_body(self, tag: Tag):
+        self.body.push(tag)
+
+    def link_css(self, link):
+        self.feed_head(Tag('link', attrs={'rel': 'stylesheet', 'type': 'text/css', 'href': link}))
+
+    def insert_css(self, css):
+        self.feed_head(Tag('style', attrs={'type': 'text/css'}, string=css))
+
+    def insert_text(self, text):
+        self.text = text
+
+    def insert_title(self, title):
+        self.title = title
+
+    def new_article(self):
+        if self.title or self.text:
+            self.merge()
+        if len(self.body.contents) >= 1:
+            self.feed_body(Tag('div', attrs={'class': 'divide'}))
+        self.feed_body(Tag('div', attrs={'class': 'article'}))
+
+    def merge(self):
+        self.article.push(self.title)
+        self.article.push(self.text)
+
+    def write_down(self, paper, indent=0):
+        self.merge()
+        paper.record('<!DOCTYPE html>\n')
+        return super(Mushroom, self).write_down(paper)
+
+
+class Compile(TagGenerate):
+    FIGURE_LIST = list()
+
+    def __init__(self, cont: str):
+        TagGenerate.__init__(self)
+        self._cl = self.parse_tag(cont)
+        self._ref_list = list()
+        self._ref_ind = 1
+        self.style_meta = set()
+        self.style_meta.add('styleText')
+        self.style_meta.add('styleMod')
+
+    def compile(self, meta, otp: Mushroom):
         """处理Tags，修改属性、生成视频标签等"""
         r = self._compile(self._cl)
         if len(self._ref_list) != 0:
             r.append(Tag('span', attrs={'style': 'font-size:24px'}, string='参考资料'))
-            n = self.tag_generate.reference_table(self._ref_list)
+            n = self.reference_table(self._ref_list)
             r.append(n)
-        return r
+        otp.insert_title(self.article_tile(meta))
+        otp.insert_text(self.article_text(*r))
+        for style in self.style_meta:
+            otp.insert_css(Config.CONF.get_setting('head/style/inline/%s' % style))
+        return otp
 
     def _compile(self, contents):
         """处理Tags"""
         contents_list = list()
         for tag in contents:
             if tag.name in ('a', 'div', 'figure', 'img', 'sup'):
-                # 使用Tag的名字作为索引，利用self.__getattribute__()
-                # 获取对应的处理方法self.a, self.div, self.figure
-                # len(contents)用来计算Tag的contents个数，供self.img判断
-                # 这是行间公式还是行内公式
                 contents_list.append(
                     self.__getattribute__(tag.name)(tag, len(contents)))
                 continue
             tag.contents = self._compile(tag.contents)
             self._remove_attrs(tag)
-            if tag.not_empty():
-                contents_list.append(tag)
+            contents_list.append(tag)
         return contents_list
 
     def figure(self, tag, sibling):
         """处理figure标签，图片"""
         img = tag.find('img', _class='lazy')
         try:
-            url = img['original']
+            url = img.get_attrs('original')
         except AttributeError:
-            url = img['actualsrc']
-        except TypeError:
-            # 没找着，返回了None
-            pass
-        if not re.match(r'^https?', img['src']):
+            url = img.get_attrs('actualsrc')
+        if not re.match(r'^https?', img.get_attrs('src')):
             url = re.sub(r'\.[a-z]+$', '.gif', url)
         return Tag('figure', contents=[Tag('img', attrs={'src': url}), tag.find('figcaption')])
-
-    def img_(self, tag, sibling):
-        """处理数学公式"""
-        self._style_meta.add('script1')
-        self._style_meta.add('script2')
-        # TODO 本地渲染数学公式很慢而且有些公式不支持，考虑使用知乎原版公式
-        name, code = (None, '$${}$$') if sibling == 1 else ('span', '\({}\)')
-        return Tag(name, string=code.format(tag['alt']))
 
     def img(self, tag, sibling):
         """处理数学公式"""
@@ -720,7 +627,9 @@ class Compile:
     def div(self, tag, sibling):
         """处理div标签，代码"""
         self._style_meta.add('styleCode')
-        return tag
+        language = re.search('language-([^"]+)', tag.string).group(1)
+        code = self.highlight_code(tag.string, language)
+        return Tag('div', attrs={'class': 'highlight'}, string=code)
 
     def a(self, tag, sibling):
         """处理a标签，视频、卡片链接、广告、普通链接"""
@@ -736,15 +645,15 @@ class Compile:
 
     def sup(self, tag, sibling):
         """处理sup标签，知乎标准的文献引用样式"""
-        self._ref_list.append((tag['text'], tag['url']))
+        self._ref_list.append((tag.get_attrs('text'), tag.get_attrs('url')))
         self._ref_ind += 1
-        return self.tag_generate.reference_index(self._ref_ind - 1)
+        return self.reference_index(self._ref_ind - 1)
 
     def _make_video_box(self, tag):
         """生成视频标签"""
-        return self.tag_generate.video_box(
+        return self.video_box(
             video_link=tag.find('span', _class='url').string,
-            cover_link=tag.find('img')['src'],
+            cover_link=tag.find('img').get_attrs('src'),
             tip=tag.find('span', **{'class': 'title'}).string
         )
 
@@ -754,7 +663,7 @@ class Compile:
         img = tag.get_attrs('image')
         if re.search('zhihu', url) and img is None:
             img = 'https://zhstatic.zhihu.com/assets/zhihu/editor/zhihu-card-default.svg'
-        return self.tag_generate.link_card(
+        return self.link_card(
             url=url,
             title=tag.string,
             img=img
@@ -766,10 +675,25 @@ class Compile:
         tag.attrs = dict()
         return tag
 
+    @classmethod
+    def highlight_code(cls, code_text, language, theme='default'):
+        def stg(r):
+            return {'&quot;': '"', '&#39;': "'", '&lt;': '<', '&gt;': '>'}.get(r.group(0), '')
+
+        return '<pre>%s</pre>' % highlight(
+            re.sub(r'(</?(\w+)[^<>]*>)|(&quot;)|(&[\w#]+;)', stg, code_text),
+            get_lexer_by_name(language, stripall=True),
+            HtmlFormatter(style=theme, nowrap=True))
+
+    @classmethod
+    def code_css_sheet(cls, theme):
+        return HtmlFormatter(style=theme, nowrap=True, cssclass='highlight').get_style_defs()
+
+
+def highlight_code(code, language, theme='default'):
+    html_formatter = HtmlFormatter(style=theme, nowrap=True)
+    return highlight(code, get_lexer_by_name(language, stripall=True), html_formatter)
+
 
 if __name__ == '__main__':
-    b = Bowl()
-    b.bgg = 'https'
-    b.setattr('bgg', 'gg')
-    print('b.bgg', b.bgg)
-    b.setattr('value', 'value')
+    pass

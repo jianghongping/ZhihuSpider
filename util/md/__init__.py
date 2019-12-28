@@ -48,37 +48,31 @@ class Code(Simple):
 
     def __init__(self, element_tag: HtmlTag = None):
         super().__init__(element_tag)
-        if self.element_tag.name == 'code':
-            self.code = self.element_tag.get_text()
+        self.language = 'text'
+        if self.element_tag.name == 'div':
+            code = self.element_tag.pre.prettify()
         else:
-            self.language = 'text'
-            if self.element_tag.name == 'div':
-                code = self.element_tag.pre.prettify()
-            else:
-                code = self.element_tag.prettify()
-            search_language = re.search(r'"language-([^()]+)">', code)
-            if search_language:
-                self.language = re.sub(r'\d+', '', search_language.group(1))
-            try:
-                regs = (r'(</span>)|(<span class=".+?">)',
-                        r'(<pre><code class=".+?">)|(</code></pre>)',
-                        r'&lt;', r'&amp;', r'&gt;')
-                words = ('', '', '<', '&', '>')
-                for reg, word in zip(regs, words):
-                    code = re.sub(reg, word, code)
-                self.code = code
-            except AttributeError:
-                from util import timer
-                file = timer.timestamp() + '.html'
-                with open(file, 'w', encoding='utf8') as foo:
-                    foo.write(self.element_tag.prettify())
-                raise ParseError("can't find any code! %s" % file, '')
+            code = self.element_tag.prettify()
+        search_language = re.search(r'"language-([^()]+)">', code)
+        if search_language:
+            self.language = re.sub(r'\d+', '', search_language.group(1))
+        try:
+            regs = (r'(</span>)|(<span class=".+?">)',
+                    r'(<pre><code class=".+?">)|(</code></pre>)',
+                    r'&lt;', r'&amp;', r'&gt;')
+            words = ('', '', '<', '&', '>')
+            for reg, word in zip(regs, words):
+                code = re.sub(reg, word, code)
+            self.code = code
+        except AttributeError:
+            from util import timer
+            file = timer.timestamp() + '.html'
+            with open(file, 'w', encoding='utf8') as foo:
+                foo.write(self.element_tag.prettify())
+            raise ParseError("can't find any code! %s" % file, '')
 
     def to_markdown(self):
-        if self.element_tag.name == 'code':
-            return ' `%s` ' % self.code
-        else:
-            return '```{}\n{}\n```'.format(self.language, self.code.strip())
+        return '```{}\n{}\n```'.format(self.language, self.code.strip())
 
     def compile_for_quote(self):
         md = self.to_markdown()

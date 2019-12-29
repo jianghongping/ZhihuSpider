@@ -68,7 +68,7 @@ class QuestionMange:
                 zc.item2md_holder(cont, meta)
             if selective and (amount == self._max_amount):
                 # TODO OUTPUT TAG
-                print(amount)
+                print('总数：', amount)
                 break
             amount += 1
         self.response_list.clear()
@@ -153,6 +153,7 @@ CRAWLER = zc.Crawler()
 
 
 def question(question_id):
+    Config.CONF.get_setting('running/cover', False)
     qm = QuestionMange(question_id)
     qm.get_response()
     qm.get_answer()

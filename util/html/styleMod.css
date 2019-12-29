@@ -1,15 +1,6 @@
 /*自定义的模块样式表*/
 
-.article {
-  margin-bottom: 10px;
-  background: #fff;
-  overflow: hidden;
-  border-radius: 2px;
-  -webkit-box-shadow: 0 1px 3px rgba(26, 26, 26, 0.1);
-  box-shadow: 0 1px 3px rgba(26, 26, 26, 0.1);
-  -webkit-box-sizing: border-box;
-  box-sizing: border-box;
-}
+
 .background-image {
   text-align: center;
   max-width: inherit;
@@ -58,7 +49,7 @@
 }
 .AuthorInfo {
   width: 240px;
-  /*margin: auto;*/
+  margin: auto;
 }
 .AuthorInfo-content {
   position: relative;

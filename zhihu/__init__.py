@@ -1,6 +1,8 @@
 from zhihu.column import *
 from zhihu.question import *
 
+__version__ = 5.0
+
 
 def start_with_id(item_id, item_type):
     if item_type == 'article':

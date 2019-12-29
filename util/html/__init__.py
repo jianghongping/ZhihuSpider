@@ -16,7 +16,7 @@ class Paper:
     def __init__(self):
         self.container = list()
 
-    def record(self, item: str):
+    def write(self, item: str):
         """纸张记录内容，向纸上写内容"""
         if not isinstance(item, str):
             raise TypeError('str type is required, not %s' % item.__class__.__name__)
@@ -86,14 +86,14 @@ class Tag:
     def write_down(self, paper, indent=0):
         padding = ' ' * 4 * indent if self.to_indent else ''
         if self.name is None:
-            paper.record('%s%s\n' % (padding, self.string))
+            paper.write('%s%s\n' % (padding, self.string))
             return
         attrs = self._str_attrs() if len(self.attrs) != 0 else ''
-        paper.record('%s<%s%s>\n' % (padding, self.name, attrs))
+        paper.write('%s<%s%s>\n' % (padding, self.name, attrs))
         for c in self.contents:
             c.write_down(paper, indent + 1)
         if self.name not in self.SELF_CLOSING:
-            paper.record('%s</%s>\n' % (padding, self.name))
+            paper.write('%s</%s>\n' % (padding, self.name))
         return paper
 
     def push(self, *items):
@@ -149,8 +149,12 @@ class Tag:
         except IndexError:
             return None
 
-    def get_attrs(self, item, default=None):
-        return self.attrs.get(item, default)
+    def get_attrs(self, item):
+        try:
+            return self.attrs[item]
+        except KeyError:
+            ls = list(self.attrs.keys())
+            raise AttributeError('%s tag no attribute named "%s".' % (self.name, item))
 
     def _attrs_match(self, attrs):
         """多值匹配法检查属性值是否匹配（包含）"""
@@ -278,7 +282,7 @@ class Parsing:
     code_reg = re.compile('(<code[^<>]*?>[\s\S]+?</code>)|(<pre[^<>]*?>[\s\S]*?</pre>)')
 
     # 匹配标识符的名称，关于标识符见marks.py
-    mark = re.compile(r'__([a-zA-Z0-9\-]+)__')  # 下划线 _ 属于 \w，在这里不能用
+    mark = re.compile(r'__#([a-zA-Z0-9\-]+)#__')  # 下划线 _ 属于 \w，在这里不能用
 
     SELF_CLOSING = ['img', 'link', 'br', 'hr', 'meta']
 
@@ -567,7 +571,7 @@ class Mushroom(Tag):
 
     def write_down(self, paper, indent=0):
         self.merge()
-        paper.record('<!DOCTYPE html>\n')
+        paper.write('<!DOCTYPE html>\n')
         return super(Mushroom, self).write_down(paper)
 
 
@@ -593,7 +597,10 @@ class Compile(TagGenerate):
         otp.insert_title(self.article_tile(meta))
         otp.insert_text(self.article_text(*r))
         for style in self.style_meta:
-            otp.insert_css(Config.CONF.get_setting('head/style/inline/%s' % style))
+            if self.CONFIG.get_setting('running/link_css'):
+                otp.link_css(self.CONFIG.get_setting('head/style/link/%s' % style))
+            else:
+                otp.insert_css(self.CONFIG.get_setting('head/style/inline/%s' % style))
         return otp
 
     def _compile(self, contents):
@@ -626,7 +633,7 @@ class Compile(TagGenerate):
 
     def div(self, tag, sibling):
         """处理div标签，代码"""
-        self._style_meta.add('styleCode')
+        self.style_meta.add('styleCode')
         language = re.search('language-([^"]+)', tag.string).group(1)
         code = self.highlight_code(tag.string, language)
         return Tag('div', attrs={'class': 'highlight'}, string=code)
@@ -645,7 +652,7 @@ class Compile(TagGenerate):
 
     def sup(self, tag, sibling):
         """处理sup标签，知乎标准的文献引用样式"""
-        self._ref_list.append((tag.get_attrs('text'), tag.get_attrs('url')))
+        self._ref_list.append((tag.get_attrs('text') or tag.get_attrs('url'), tag.get_attrs('url')))
         self._ref_ind += 1
         return self.reference_index(self._ref_ind - 1)
 

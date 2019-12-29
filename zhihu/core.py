@@ -184,6 +184,10 @@ def file_name(suffix, *part_name):
     """返回正确的文件名"""
     names = format_path('-'.join(part_name))
     file = os.path.join(Config.CONF.wh(), '%s.%s' % (names, suffix))
+
+    if Config.CONF.get_setting('running/cover'):
+        return file
+
     REPETITION = 1
     while os.path.exists(file):
         file = os.path.join(Config.CONF.wh(),

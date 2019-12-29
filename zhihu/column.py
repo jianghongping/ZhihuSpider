@@ -102,7 +102,7 @@ class ColumnMange:
                     amount += 1
                     article_ids[each_id] = True
         # TODO OUTPUT TAG
-        print(amount)
+        print('总数：', amount)
         self.clear_finish()
 
     @zc.catch_error_cls

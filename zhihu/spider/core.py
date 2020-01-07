@@ -5,10 +5,10 @@ import requests
 from bs4 import BeautifulSoup
 from requests import HTTPError
 
-import util.html as uh
-import util.md as umd
-from util import timer
-from util.conf import Config
+import zhihu.html as uh
+import zhihu.md as umd
+from zhihu import timer
+from zhihu.conf import Config
 
 try:
     Config.init()

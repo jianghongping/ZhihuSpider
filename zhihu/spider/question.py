@@ -3,10 +3,10 @@ import os
 import re
 from json.decoder import JSONDecodeError
 
-import util.timer as timer
-import zhihu.core as zc
-from util import Meta
-from util.conf import Config
+import zhihu.timer as timer
+import zhihu.spider.core as zc
+from zhihu import Meta
+from zhihu.conf import Config
 
 
 class QuestionMange:

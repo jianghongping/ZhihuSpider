@@ -1,4 +1,3 @@
-import json
 import os
 import pickle
 
@@ -6,7 +5,7 @@ import pickle
 class Config:
     """程序配置信息"""
 
-    CONFIG_FILE = r'.\util\conf\config.pkl'
+    CONFIG_FILE = r'zhihu\conf\config'
     CONF = None
 
     @classmethod
@@ -23,21 +22,12 @@ class Config:
             return cls.CONF
 
     def __init__(self, file):
-        if file.endswith('json'):
-            self.config = json.loads(open(file, 'r').read())
-        elif file.endswith('pkl'):
-            self.config = pickle.loads(open(file, 'rb').read())
-        else:
-            raise ValueError("The file must be end with json or pkl")
+        self.config = pickle.loads(open(file, 'rb').read())
         self.file = file
 
-    def save(self, file=None):
-        if file is None:
-            file = self.file
-        opm, encoding, operate = ('w', 'utf8', json) if file.endswith('json') else (
-            'wb', None, pickle)
-        with open(file, opm, encoding=encoding) as foo:
-            operate.dump(self.config, foo)
+    def save(self):
+        with open(self.file, 'wb') as foo:
+            pickle.dump(self.config, foo)
 
     def __getitem__(self, key):
         return self.config[key]

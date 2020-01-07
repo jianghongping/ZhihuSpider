@@ -4,8 +4,7 @@ import re
 from bs4.element import NavigableString as HtmlStr
 from bs4.element import Tag as HtmlTag
 
-from util import Meta
-from util.html import Parsing
+from zhihu import Meta
 
 REFERENCE_LIST = []
 FIGURE_LIST = list()
@@ -559,74 +558,3 @@ def save_images(file):
 # 这个字典应用于 Multilevel 中的构造函数，不宜随意修改！
 tag_dict = {Quote.type: Quote, Figure.type: Figure, Math.type: Math,
             NewLine.type: NewLine, Horizontal.type: Horizontal, Superscript.type: Superscript}
-
-
-class Handle:
-    @staticmethod
-    def code(tag: HtmlTag, to_quote=False):
-        code = tag.prettify()
-        try:
-            language = re.sub(r'[\d+\s]+', '', re.search(r'"language-([^()]+)">', code).group(1))
-        except AttributeError:
-            language = 'text'
-
-        def stg(r):
-            return {'&quot;': '"', '&#39;': "'", '&lt;': '<', '&gt;': '>'}.get(r.group(0), '')
-
-        code = re.sub(r'(</?(\w+)[^<>]*>)|(&quot;)|(&[\w#]+;)', stg, code).strip()
-
-        if not to_quote:
-            return '```{}\n{}\n```'.format(language, code)
-        else:
-            codes = re.split(r'\n', code)
-            code_list = list()
-            code_list.append('>```%s' % language)
-            for c in codes:
-                code_list.append('> %s \n' % c)
-            code_list.append('>```')
-            return ''.join(code_list)
-
-    @staticmethod
-    def figure(tag: HtmlTag):
-        img_attrs = tag.find('img').attrs
-        figure_link = img_attrs.get('data-original', None) or img_attrs.get('src', None)
-        try:
-            title = tag.find('figcaption').get_text(strip=True)
-        except AttributeError:
-            title = ''
-
-        FIGURE_LIST.append(figure_link)
-        return '![%s](%s "%s")' % (title, figure_link, title)
-
-    @staticmethod
-    def video(tag):
-        video_link = tag.find('span', class_='url').get_text(strip=True)
-        figure_link = tag.find('img', 'thumbnail')['src']
-        title = tag.find('span', class_='title').get_text(strip=True) or video_link
-        return '![%s](%s "%s")\n**%s，观看视频请访问** ：[%s](%s)' % (
-            title, figure_link, title, title, video_link, video_link)
-
-    @staticmethod
-    def link(tag: HtmlTag):
-        if tag.name != 'a':
-            text = tag['data-text']
-            url = tag['data-url']
-        else:
-            try:
-                url = tag['href']
-                if not bool(re.search(r'(http)|(www)', url)):
-                    url = 'https://www.zhihu.com' + url
-                text = re.sub(r'#.#', '——', tag.get_text('#', strip=True))
-            except KeyError as e:
-                text = ''
-                url = ''
-
-        return ' [%s](%s) ' % (text, url) if text != '' and url != '' else ''
-
-
-class Compile:
-    def __init__(self, conts):
-        self._cl = Parsing().parse_tag(conts)
-
-    def compile(self, otp):
-        pass

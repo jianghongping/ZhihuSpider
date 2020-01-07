@@ -1,11 +1,11 @@
 # files
 *.json
 *.md
+*css
+*html
 
 ## python resourse
 config_tool.py
-GrandConcourse.py
-setup.py
 
 
 # dirs
@@ -16,5 +16,5 @@ nmd/
 __pycache__/
 commit/
 pic/
-pygments/
-util/html/code_styles/
+zhihu/html/commit
+zhihu/html/code_style

@@ -103,7 +103,7 @@ class QuestionMange:
         response = CRAWLER.question_msg_spider(self.question_id)
         title = re.search(Config.CONF.get_setting('QuestionManage/title_reg'),
                           response.text).group(1)
-        title = codecs.decode(title, 'unicode_escape')
+        # title = codecs.decode(title, 'unicode_escape')
         Config.CONF.warehouse(
             '~question/%s' % zc.format_path(title))
         return title
@@ -153,7 +153,7 @@ CRAWLER = zc.Crawler()
 
 
 def question(question_id):
-    Config.CONF.get_setting('running/cover', False)
+    Config.CONF.setting('running/cover', False)
     qm = QuestionMange(question_id)
     qm.get_response()
     qm.get_answer()

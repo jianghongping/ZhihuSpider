@@ -10,11 +10,7 @@ import zhihu.md as umd
 from zhihu import timer
 from zhihu.conf import Config
 
-try:
-    Config.init()
-except AttributeError:
-    Config.CONF = Config(r'..\util\conf\config.pkl')
-
+Config.init()
 GET_ARTICLES_ID = Config.CONF.get_setting('core/GET_ARTICLES_ID')
 SLEEP = Config.CONF.get_setting('core/SLEEP')
 SORT_BY_VOT = Config.CONF.get_setting('core/SORT_BY_VOT')
@@ -76,6 +72,7 @@ class API:
 
 
 def verity(func):
+
     def verity_deco(self, *args, **kwargs):
         """验证返回的网络数据是否正确，确保输入到核心库数据的正确性"""
         # 验证不通过就引发VerityError
@@ -91,6 +88,7 @@ def verity(func):
 
 
 def cached(func):
+
     def cached_func(self, *args, **kwargs):
         res = func(self, *args, **kwargs)
         if Config.CONF.get_setting('running/saving') is True:
@@ -117,7 +115,9 @@ class Crawler(requests.Session):
 
     @verity
     def pull_response(self, url):
-        return self.get(url, timeout=10)
+        r = self.get(url, timeout=10)
+        r.encoding = 'utf8'
+        return r
 
     @cached
     def article_spider(self, item_id):
@@ -190,8 +190,10 @@ def file_name(suffix, *part_name):
 
     REPETITION = 1
     while os.path.exists(file):
-        file = os.path.join(Config.CONF.wh(),
-                            '%s-%d.%s' % (names, REPETITION, suffix))
+        file = os.path.join(
+            Config.CONF.wh(),
+            '%s-%d.%s' % (names, REPETITION, suffix)
+        )
         REPETITION += 1
     return file
 

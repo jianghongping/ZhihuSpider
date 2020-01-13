@@ -31,7 +31,8 @@ def get_id(item_link):
     for reg, ty in zip(('^https?.+?zhuanlan.zhihu.com/([\w\d]+)$',
                         '^https?.+?zhuanlan.zhihu.com/p/(\d+)$',
                         '^https?.+?question/(\d+)$',
-                        '^https?.+?answer/(\d+)$'), ('column', 'article', 'question', 'answer')):
+                        '^https?.+?answer/(\d+)$'),
+                       ('column', 'article', 'question', 'answer')):
         r = re.search(reg, item_link)
         if bool(r):
             return r.group(1), ty

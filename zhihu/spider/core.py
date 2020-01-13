@@ -33,11 +33,15 @@ STYLE = Config.CONF.get_setting('core/STYLE')  # 0表示生成html，非0表示�
 
 
 class VerityError(ValueError):
+    """网络数据验证异常"""
+
     def __init__(self, *args):
         super(VerityError, self).__init__(*args)
 
 
 class API:
+    """获得有关数据的链接类"""
+
     LIMIT_size = Config.CONF.get_setting('API/LIMIT_size')
     ANSWER_API = Config.CONF.get_setting('API/ANSWER_API')
     CC_ARTICLE_API = Config.CONF.get_setting('API/CC_ARTICLE_API')
@@ -72,7 +76,7 @@ class API:
 
 
 def verity(func):
-
+    """验证网络请求结果"""
     def verity_deco(self, *args, **kwargs):
         """验证返回的网络数据是否正确，确保输入到核心库数据的正确性"""
         # 验证不通过就引发VerityError
@@ -88,7 +92,7 @@ def verity(func):
 
 
 def cached(func):
-
+    """保存json数据"""
     def cached_func(self, *args, **kwargs):
         res = func(self, *args, **kwargs)
         if Config.CONF.get_setting('running/saving') is True:
@@ -106,7 +110,7 @@ def cached(func):
 
 
 class Crawler(requests.Session):
-    # TODO 添加保存接送数据的接口
+
     UA = Config.CONF.get_setting('Crawler/user-agent')
 
     def __init__(self):

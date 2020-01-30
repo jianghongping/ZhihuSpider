@@ -77,6 +77,7 @@ class API:
 
 def verity(func):
     """验证网络请求结果"""
+
     def verity_deco(self, *args, **kwargs):
         """验证返回的网络数据是否正确，确保输入到核心库数据的正确性"""
         # 验证不通过就引发VerityError
@@ -93,6 +94,7 @@ def verity(func):
 
 def cached(func):
     """保存json数据"""
+
     def cached_func(self, *args, **kwargs):
         res = func(self, *args, **kwargs)
         if Config.CONF.get_setting('running/saving') is True:
@@ -110,7 +112,6 @@ def cached(func):
 
 
 class Crawler(requests.Session):
-
     UA = Config.CONF.get_setting('Crawler/user-agent')
 
     def __init__(self):
@@ -184,11 +185,13 @@ def format_path(path):
     return re.sub(r'[\\/:*?"<>|]', '#', path)
 
 
-def file_name(suffix, *part_name):
+def format_file_name(suffix, *part_name):
     """返回正确的文件名"""
     names = format_path('-'.join(part_name))
-    file = os.path.join(Config.CONF.wh(), '%s.%s' % (names, suffix))
-
+    if (suffix is not None) and (suffix != ''):
+        file = os.path.join(Config.CONF.wh(), '%s.%s' % (names, suffix))
+    else:
+        file = os.path.join(Config.CONF.wh(), names)
     if Config.CONF.get_setting('running/cover'):
         return file
 
@@ -203,14 +206,32 @@ def file_name(suffix, *part_name):
 
 
 def item2html_holder(cont, meta):
-    p = uh.Compile(cont).compile(meta, uh.Mushroom(meta.title)).write_down(uh.Paper())
-    p.save(file_name('html', meta.author, meta.title))
+    stylesheet_inline = Config.CONF.get_setting('running/stylesheet_inline')
+    mushroom = uh.Mushroom(meta.title, stylesheet_inline=stylesheet_inline)
+    uh.Compile(cont).compile(meta, mushroom)
+    mushroom.write_down(uh.Paper()).save(format_file_name('html', meta.author, meta.title))
+    if not stylesheet_inline:
+        stylesheets = mushroom.output_css_code()
+        for stylesheet in stylesheets:
+            with open(format_file_name(None, stylesheet['file_name']), 'w',
+                      encoding='utf8') as foo:
+                foo.write(stylesheet['code'])
+    if Config.CONF.get_setting('running/download_image'):
+        cra = Crawler()
+        for image_url in mushroom.image_list:
+            file_name = os.path.basename(image_url)
+            path = os.path.join(Config.CONF.wh(), 'image')
+            if not os.path.exists(path):
+                os.makedirs(path)
+            with open(os.path.join(path, file_name), 'wb') as foo:
+                foo.write(cra.pull_response(image_url).content)
+                print(file_name)
     show_info(meta)
 
 
 def item2md_holder(cont, meta):
     an = umd.Markdown(BeautifulSoup(cont, 'lxml').body, meta)
-    file = file_name('md', meta.author, meta.title)
+    file = format_file_name('md', meta.author, meta.title)
     an.make_markdown(file)
     show_info(meta)
 

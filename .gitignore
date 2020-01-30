@@ -1,8 +1,7 @@
 # files
 *.json
 *.md
-*css
-*html
+*.html
 
 ## python resourse
 config_tool.py
@@ -14,6 +13,7 @@ test/
 nmd/
 .idea/
 __pycache__/
+code_styles/
 commit/
 pic/
 zhihu/html/commit

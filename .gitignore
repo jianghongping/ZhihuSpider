@@ -1,7 +1,11 @@
 # files
 *.json
-*.md
 *.html
+.gitignore
+开发记录.md
+guidance.md
+
+
 
 ## python resourse
 config_tool.py
@@ -10,7 +14,6 @@ config_tool.py
 # dirs
 data/
 test/
-nmd/
 .idea/
 __pycache__/
 code_styles/
@@ -18,3 +21,9 @@ commit/
 pic/
 zhihu/html/commit
 zhihu/html/code_style
+output/
+
+
+## devolopment
+
+md.py

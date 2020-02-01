@@ -7,7 +7,6 @@ from bs4.element import Tag as HtmlTag
 from zhihu import Meta
 
 REFERENCE_LIST = []
-FIGURE_LIST = list()
 
 
 class Simple:
@@ -42,9 +41,7 @@ class Simple:
 
 
 class Code(Simple):
-    type = 'code'
-    tag_class = 'highlight'
-    support = {'code', 'pre', 'div'}
+    type = 'div'
 
     def __init__(self, element_tag: HtmlTag = None):
         super().__init__(element_tag)
@@ -89,7 +86,6 @@ class Figure(Simple):
             self.describe = describe_tag.get_text(strip=True)
 
     def to_markdown(self):
-        FIGURE_LIST.append(self.figure_link)
         return '![%s](%s "%s")' % (self.describe, self.figure_link, self.describe)
 
 
@@ -172,8 +168,9 @@ class String(Simple):
     blank_type = 'ztext-empty-paragraph'
     not_empty = 'not empty'
 
-    def __init__(self, element_tag: (HtmlStr, HtmlTag)):
-        super().__init__(element_tag)
+    def __init__(self, element_tag: HtmlStr):
+        super().__init__()
+        self.element_tag = element_tag
         self.text = self.element_tag.strip()
 
     def to_markdown(self):
@@ -255,38 +252,25 @@ class Multilevel(Simple):
                     probe.next_sibling = String(element)
                     probe = probe.next_sibling
                 continue
-            element_tag_type = element.name
             # br 标签出现的频率特别高，放在第一位有利于提高程序效率
-            if element_tag_type == NewLine.type:
+            if element.name == NewLine.type:
                 probe.next_sibling = NewLine(element)
-            elif element_tag_type in Paragraph.support:
-                if element.attrs.get('class', String.not_empty)[0] == String.blank_type:
+            elif element.name in Paragraph.support:
+                if String.blank_type in element.attrs.get('class', String.not_empty):
                     continue
                 else:
                     probe.next_sibling = Paragraph(element)
-            elif element_tag_type in FontStyle.support:
+            elif element.name in FontStyle.support:
                 probe.next_sibling = FontStyle(element)
-            elif element_tag_type == Url.type:
-                try:
-                    element_class = element.attrs.get('class', Video.not_video)[0]
-                    probe.next_sibling = Video(
-                        element) if element_class == Video.tag_class else Link(element)
-                except IndexError:
-                    probe.next_sibling = Link(element)
-            elif element_tag_type in Table.support:
-                probe.next_sibling = Table(element)
-            elif element_tag_type in Code.support:
-                if element_tag_type == 'div':
-                    try:
-                        element_class = element.attrs.get('class')[0]
-                    except TypeError:
-                        print(element_tag.prettify())
-                    probe.next_sibling = Code(
-                        element) if element_class == Code.tag_class else Paragraph(element)
+            elif element.name == Url.type:
+                if Video.tag_class in element.attrs.get('class', Video.not_video):
+                    probe.next_sibling = Video(element)
                 else:
-                    probe.next_sibling = Code(element)
+                    probe.next_sibling = Link(element)
+            elif element.name in Table.support:
+                probe.next_sibling = Table(element)
             else:
-                probe.next_sibling = tag_dict.get(element_tag_type, Unsupported)(element)
+                probe.next_sibling = tag_dict.get(element.name, Unsupported)(element)
             probe = probe.next_sibling
         self.root = head.next_sibling
 
@@ -302,8 +286,10 @@ class Multilevel(Simple):
         """判断编译时是否需要在兄弟标签的编译内容首尾添加空格"""
 
         if element.next_sibling is not None:
-            return element.detail_type() in [Link.type, *FontStyle.format_type,
-                                             Unsupported.type, Superscript.type]
+            return element.detail_type() in [
+                Link.type, *FontStyle.format_type,
+                Unsupported.type, Superscript.type
+            ]
         else:
             return False
 
@@ -357,8 +343,6 @@ class Paragraph(Multilevel):
 
     def __init__(self, element_tag: HtmlTag):
         super().__init__(element_tag)
-        # if '模2运算中两个相同的数相加为' in self.element_tag.prettify():
-        #     print('__init__:', self.element_tag)
 
     def to_markdown(self):
         paragraph = ''
@@ -486,23 +470,8 @@ class Markdown:
         self.created_date = meta.created_date
         self.voteup = meta.voteup
         self.background = meta.background
-        self.file_name = ''
         self.text = Text(tag)
         self.markdown = self.compile()
-
-    def get_file_name(self, template):
-        """%v-%d-%a-%t"""
-        title = re.sub(r'[\\/]', '、', self.title)
-        title = re.sub(r'[？?*:<>"|\n\t]', '', title)
-        date = re.sub(r'-', '', self.created_date)
-        file_name_split = {'%a': self.author, '%d': date, '%t': title, '%v': str(self.voteup)}
-        file_name_t = template.split('-')
-        names = []
-        for te in file_name_t:
-            e = file_name_split.get(te, '')
-            names.append(e)
-        name = '-'.join(names)
-        return name + '.md'
 
     def make_markdown(self, file):
         try:
@@ -530,31 +499,11 @@ class Markdown:
     def __iter__(self):
         return iter(self.text)
 
-    def set_file_name(self, template=None, file_name=None):
-        if template is not None:
-            self.file_name = self.get_file_name(template)
-        elif file_name is not None:
-            self.file_name = file_name
-        else:
-            raise ValueError
-
     def __str__(self):
         return '%s\n%s / %s' % (self.title, self.author, self.created_date)
 
 
-def save_images(file):
-    try:
-        with open(file, 'w', encoding='utf8') as foo:
-            foo.write('\n'.join(FIGURE_LIST))
-    except FileNotFoundError:
-        try:
-            os.makedirs(os.path.dirname(file))
-            with open(file, 'w', encoding='utf8') as foo:
-                foo.write('\n'.join(FIGURE_LIST))
-        except OSError:
-            pass
-
-
 # 这个字典应用于 Multilevel 中的构造函数，不宜随意修改！
 tag_dict = {Quote.type: Quote, Figure.type: Figure, Math.type: Math,
-            NewLine.type: NewLine, Horizontal.type: Horizontal, Superscript.type: Superscript}
+            NewLine.type: NewLine, Horizontal.type: Horizontal, Code.type: Code,
+            Superscript.type: Superscript}

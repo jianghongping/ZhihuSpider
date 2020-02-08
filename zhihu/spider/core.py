@@ -206,14 +206,13 @@ def format_file_name(suffix, *part_name):
 
 
 def item2html_holder(cont, meta):
-    css_output = Config.CONF.get_setting('running/css_output')
-    mushroom = uh.Mushroom(meta.title, css_output=css_output)
+    mushroom = uh.Mushroom(meta.title, css_output=Config.CONF.get_setting('running/css_output'))
     uh.Compile(cont).compile(meta, mushroom)
     mushroom.write_down(uh.Paper()).save(format_file_name('html', meta.author, meta.title))
-    if css_output:
+    if Config.CONF.get_setting('running/css_output'):
         stylesheets = mushroom.output_css_code()
         for stylesheet in stylesheets:
-            with open(format_file_name(None, stylesheet['file_name']), 'w',
+            with open(format_file_name('css', stylesheet['file_name']), 'w',
                       encoding='utf8') as foo:
                 foo.write(stylesheet['code'])
     if Config.CONF.get_setting('running/download_image'):

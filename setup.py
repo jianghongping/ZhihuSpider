@@ -9,8 +9,8 @@ setup(
               'zhihu.timer', 'zhihu.spider'],
     url='https://github.com/Milloyy/ZhihuSpider',
     license='MIT',
-    author='Milloy',
-    author_email='yuerxmm@163.com',
+    author='',
+    author_email='',
     description='Show zhihu answer, question and article as html or markdown file.',
     platforms='win10',
     install_requires=[

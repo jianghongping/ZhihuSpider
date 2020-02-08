@@ -88,19 +88,15 @@ class ColumnMange:
             pass
 
     def get_article(self):
-        style = Config.CONF.get_setting('running/style')
         article_ids = self.column_status.get('ids', dict())
         amount = 0
-        for each_id, status in article_ids.items():
+        for article_id, status in article_ids.items():
             if status is False:
-                if style == zc.STYLE:
-                    finish = article2html(each_id)
-                else:
-                    finish = article2md(each_id)
+                finish_status = zc.get_item_with_id(article_id, html_func=article2html, md_func=article2md)
                 timer.random_sleep(end=zc.SLEEP)
-                if finish is True:
+                if finish_status is True:
                     amount += 1
-                    article_ids[each_id] = True
+                    article_ids[article_id] = True
         # TODO OUTPUT TAG
         print('总数：', amount)
         self.clear_finish()

@@ -47,8 +47,10 @@ class Code(Simple):
         super().__init__(element_tag)
         code = self.element_tag.prettify()
         try:
-            self.language = re.sub(r'[\d+\s]+', '',
-                                   re.search(r'"language-([^()]+)">', code).group(1))
+            self.language = re.sub(
+                r'[\d+\s]+', '',
+                re.search(r'"language-([^()]+)">', code).group(1)
+            )
         except AttributeError:
             self.language = 'text'
 

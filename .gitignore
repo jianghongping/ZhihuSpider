@@ -1,0 +1,11 @@
+## file
+
+
+## dir
+build/
+data/
+development/
+dist/
+test/
+__pycache__/
+.idea/

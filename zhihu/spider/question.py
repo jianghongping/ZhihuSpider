@@ -52,19 +52,15 @@ class QuestionMange:
         self.batch_size = 0
 
     def get_answer(self, selective=True):
-        style = Config.CONF.get_setting('running/style')
         if selective is True:
-            self.response_list = sorted(self.response_list, key=lambda x: x['voteup_count'],
-                                        reverse=True)
+            self.response_list = sorted(
+                self.response_list, key=lambda x: x['voteup_count'], reverse=True)
         amount = 1
         for each_ans in self.response_list:
             cont, meta = self.content(each_ans), self.meta(each_ans)
             if selective and (self.assess_content(cont) is False):
                 continue
-            if style == zc.STYLE:
-                zc.item2html_holder(cont, meta)
-            else:
-                zc.item2md_holder(cont, meta)
+            zc.question_answers_to_file(cont, meta)
             if selective and (amount == self._max_amount):
                 # TODO OUTPUT TAG
                 print('总数：', amount)
@@ -152,7 +148,6 @@ CRAWLER = zc.Crawler()
 
 
 def question(question_id):
-    Config.CONF.setting('running/cover', False)
     qm = QuestionMange(question_id)
     qm.get_response()
     qm.get_answer()

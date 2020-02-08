@@ -12,22 +12,29 @@ class Config:
     def init(cls):
         """初始化全局配置文件"""
         try:
-            file = os.path.join(os.getcwd(), Config.CONFIG_FILE)
-            assert os.path.exists(file)
+            config_msg = os.path.join(os.getcwd(), Config.CONFIG_FILE)
+            assert os.path.exists(config_msg)
         except AssertionError:
-            raise AttributeError('Config.init be called by NewConcourse only, please use Config().')
-        else:
-            if cls.CONF is None:
-                cls.CONF = Config(file)
-            return cls.CONF
+            from zhihu.conf.config import config
+            config_msg = config
+
+        if cls.CONF is None:
+            cls.CONF = Config(config_msg)
+        return cls.CONF
 
     def __init__(self, file):
-        self.config = pickle.loads(open(file, 'rb').read())
-        self.file = file
+        try:
+            self.config = pickle.loads(open(file, 'rb').read())
+            self.file = file
+        except TypeError:
+            if isinstance(file, dict):
+                self.config = file
+                self.file = None
 
     def save(self):
-        with open(self.file, 'wb') as foo:
-            pickle.dump(self.config, foo)
+        if self.file is not None:
+            with open(self.file, 'wb') as foo:
+                pickle.dump(self.config, foo)
 
     def __getitem__(self, key):
         return self.config[key]

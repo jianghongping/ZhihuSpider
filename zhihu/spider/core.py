@@ -97,7 +97,7 @@ def cached(func):
 
     def cached_func(self, *args, **kwargs):
         res = func(self, *args, **kwargs)
-        if Config.CONF.get_setting('running/saving') is True:
+        if Config.CONF.get_setting('running/cached') is True:
             itd = kwargs.get('item_id', args[0])
             try:
                 ofs = kwargs.get('offset', args[1])
@@ -206,11 +206,11 @@ def format_file_name(suffix, *part_name):
 
 
 def item2html_holder(cont, meta):
-    stylesheet_inline = Config.CONF.get_setting('running/stylesheet_inline')
-    mushroom = uh.Mushroom(meta.title, stylesheet_inline=stylesheet_inline)
+    css_output = Config.CONF.get_setting('running/css_output')
+    mushroom = uh.Mushroom(meta.title, css_output=css_output)
     uh.Compile(cont).compile(meta, mushroom)
     mushroom.write_down(uh.Paper()).save(format_file_name('html', meta.author, meta.title))
-    if not stylesheet_inline:
+    if css_output:
         stylesheets = mushroom.output_css_code()
         for stylesheet in stylesheets:
             with open(format_file_name(None, stylesheet['file_name']), 'w',
@@ -238,3 +238,20 @@ def item2md_holder(cont, meta):
 
 def show_info(meta):
     print('%5d\t%s\t《%s》' % (meta.voteup, meta.author, meta.title))
+
+
+# 下面两个函数用于对file_type设置的统一管理，方便file_type名称更改时统一修改
+def get_item_with_id(item_id, html_func, md_func):
+    """根据item_id将内容生成html或markdown文件"""
+    if Config.CONF.get_setting('running/file_type') == STYLE:
+        return html_func(item_id)
+    else:
+        return md_func(item_id)
+
+
+def question_answers_to_file(cont, meta):
+    """根据所给的cont和meta生成html或markdown文件"""
+    if Config.CONF.get_setting('running/file_type') == STYLE:
+        return item2html_holder(cont, meta)
+    else:
+        return item2md_holder(cont, meta)

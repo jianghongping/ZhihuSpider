@@ -461,10 +461,7 @@ class TagGenerate(Parsing):
 
     def __init__(self):
         super(TagGenerate, self).__init__()
-        try:
-            self.CONFIG = Config.init()
-        except AttributeError:
-            self.CONFIG = Config('../conf/config.pkl')
+        self.CONFIG = Config.init()
 
     def template(self, name):
         try:
@@ -538,7 +535,7 @@ class TagGenerate(Parsing):
 
 class Mushroom(Tag):
 
-    def __init__(self, web_title, stylesheet_inline=True):
+    def __init__(self, web_title, css_output=False):
         Tag.__init__(self, 'html', attrs={'lang': 'zh'})
         self.head = Tag('head')
         self.body = Tag('body')
@@ -548,7 +545,7 @@ class Mushroom(Tag):
         self.title = None
         self.text = None
         self.new_article()
-        self.stylesheet_inline = stylesheet_inline
+        self.css_output = css_output
         self.stylesheets = list()
         self.image_list = list()
 
@@ -601,10 +598,10 @@ class Mushroom(Tag):
     def write_down(self, paper, indent=0):
         self.commit_article()
         paper.write('<!DOCTYPE html>\n')
-        if self.stylesheet_inline:
-            self.insert_css_code()
-        else:
+        if self.css_output:
             self.link_css_file()
+        else:
+            self.insert_css_code()
         return super(Mushroom, self).write_down(paper)
 
 

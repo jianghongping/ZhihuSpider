@@ -8,3 +8,4 @@ development/
 dist/
 __pycache__/
 .idea/
+Zhihu_Spider.egg-info/

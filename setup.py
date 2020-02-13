@@ -1,21 +1,20 @@
-from setuptools import setup
+from setuptools import setup, find_packages
+
 import zhihu
 
 setup(
     name='Zhihu Spider',
     version=zhihu.__version__,
     keyword=('zhihu', 'spider'),
-    packages=['zhihu', 'zhihu.md', 'zhihu.conf', 'zhihu.html',
-              'zhihu.timer', 'zhihu.spider'],
+    packages=find_packages(),
     url='https://github.com/Milloyy/ZhihuSpider',
     license='MIT',
-    author='',
+    author='小鬼',
     author_email='',
-    description='Show zhihu answer, question and article as html or markdown file.',
+    description='本地化收藏知乎优质内容，包括特定答案，问题的优质答案，文章，专栏文章，收藏夹的答案和文章',
     platforms='win10',
     install_requires=[
         'pygments>=2.3.1',
-        'bs4',
         'requests'
     ],
     scripts=[],
@@ -25,7 +24,10 @@ setup(
         ]
     },
     data_files=[
-        ('zhihu', ['zhihu/conf/config'])
+        ('zhihu/documen/attachment', ['zhihu/document/attachment/element.html',
+                                      'zhihu/document/attachment/styleCode.css',
+                                      'zhihu/document/attachment/styleMod.css',
+                                      'zhihu/document/attachment/styleText.css'])
     ],
     zip_safe=False
 )

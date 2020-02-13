@@ -132,7 +132,7 @@ class Crawler(requests.Session, API):
 
     @classmethod
     def cached_network_data(cls, data, item_name, item_id, **kwargs):
-        """缓存原始数据（已停用）"""
+        """缓存原始数据"""
         ofs = kwargs.get('offset', None) or kwargs.get('page', None) or timer.timestamp_str()
         file = os.path.join(config.cached_warehouse(), '%s-%s-%s.json' % (item_name, item_id, ofs))
         with open(file, 'w', encoding='utf8') as foo:

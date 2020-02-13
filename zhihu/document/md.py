@@ -4,8 +4,6 @@ import re
 from bs4.element import NavigableString as HtmlStr
 from bs4.element import Tag as HtmlTag
 
-from zhihu import Meta
-
 REFERENCE_LIST = []
 
 
@@ -463,10 +461,10 @@ class FontStyle(Multilevel):
 
 
 class Markdown:
-    def __init__(self, tag, meta: Meta):
+    def __init__(self, tag, meta):
         self.author = meta.author
         self.author_avatar_url = meta.author_avatar_url
-        self.author_page = meta.author_page
+        self.author_homepage = meta.author_homepage
         self.title = meta.title
         self.original_url = meta.original_url
         self.created_date = meta.created_date
@@ -491,7 +489,7 @@ class Markdown:
         split_line = '-' * len(title) + '\n\n'
         head_img = '![%s](%s "%s")&emsp;' % (self.author, self.author_avatar_url, self.author)
         author = '**[%s](%s) / %s**\n\n' % (
-            self.author, self.author_page, self.created_date)
+            self.author, self.author_homepage, self.created_date)
         markdown_head = background + title + split_line + head_img + author
         return markdown_head + self.text.to_markdown()
 

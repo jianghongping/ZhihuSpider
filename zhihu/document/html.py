@@ -1,50 +1,51 @@
-import os
 import re
 
 from pygments import highlight
 from pygments.formatters.html import HtmlFormatter
 from pygments.lexers import get_lexer_by_name
 
-from zhihu.conf import Config
+from zhihu.conf import config
+
+__all__ = ['Tag', 'Parsing', 'TagGenerate', 'Mushroom', 'Formatter']
 
 
-class Paper:
-    """
-    一张高性能的“纸”，它能够高效地管理写入这张“纸”上的文本，
-    """
+def highlight_code(code, language, theme='default'):
+    html_formatter = HtmlFormatter(style=theme, nowrap=True)
+    return highlight(code, get_lexer_by_name(language, stripall=True), html_formatter)
 
-    def __init__(self):
-        self.container = list()
 
-    def write(self, item: str):
-        """纸张记录内容，向纸上写内容"""
-        if not isinstance(item, str):
-            raise TypeError(
-                'str type is required, not %s' % item.__class__.__name__
-            )
-        self.container.append(item)
+def wrapper_handle_attrs(func):
+    """转化html的标签属性为字典"""
 
-    def save(self, file: str):
-        """保存纸上的内容"""
+    # 这是一个装饰Parsing.handle_attrs_tmp、Parsing.handle_attrs_tag的装饰器
+    def handle_attrs(self, attrs_str):
+        attrs = dict()
+        if attrs_str == '/':
+            return attrs
+        attrs_list = re.findall(self.attr_reg, attrs_str)
+        for attr in attrs_list:
+            attrs[attr[0]] = func(self, attr)
+        return attrs
+
+    return handle_attrs
+
+
+def except_handle_string(func):
+    """处理字符串"""
+
+    # 捕获stg != '' 的断言装饰器
+    def handle_string(self, stg):
         try:
-            with open(file, 'a+', encoding='utf8') as foo:
-                foo.truncate(0)
-                for line in self.container:
-                    foo.write(line)
-        except FileNotFoundError:
-            os.makedirs(os.path.dirname(file))
-            self.save(file)
+            return func(self, stg)
+        except AssertionError:
+            pass
 
-    def show(self):
-        """展示纸上的内容"""
-        print(str(self))
+    return handle_string
 
-    def clear(self):
-        """清空纸上的内容"""
-        self.container.clear()
 
-    def __str__(self):
-        return ''.join(self.container)
+class TagParseError(ValueError):
+    def __init__(self):
+        super(TagParseError, self).__init__('can not parse the tag, maybe self-close tag was met.')
 
 
 class Tag:
@@ -85,18 +86,18 @@ class Tag:
             self.push(Tag(None, string=string, indent=indent))
         self.to_indent = indent
 
-    def write_down(self, paper, indent=0):
+    def write_down(self, outfile, indent=0):
         padding = ' ' * 4 * indent if self.to_indent else ''
         if self.name is None:
-            paper.write('%s%s\n' % (padding, self.string))
+            outfile.write('%s%s\n' % (padding, self.string))
             return
         attrs = self._str_attrs() if len(self.attrs) != 0 else ''
-        paper.write('%s<%s%s>\n' % (padding, self.name, attrs))
+        outfile.write('%s<%s%s>\n' % (padding, self.name, attrs))
         for c in self.contents:
-            c.write_down(paper, indent + 1)
+            c.write_down(outfile, indent + 1)
         if self.name not in self.SELF_CLOSING:
-            paper.write('%s</%s>\n' % (padding, self.name))
-        return paper
+            outfile.write('%s</%s>\n' % (padding, self.name))
+        return outfile
 
     def push(self, *items):
         # 在Compile过程中由于Compile.a()的需要，
@@ -126,28 +127,47 @@ class Tag:
                 s.append(c.string.strip() if strip else c.string)
             return split.join(s)
 
-    def find_tag(self, name, limit, **kwargs):
+    def search_tags(self, name, **kwargs):
+        limit = kwargs.get('limit', -1)
         found_list = list()
+        kwargs.pop('limit', None)
         if self.name == name and self._attrs_match(kwargs):
             found_list.append(self)
         else:
-            for tag in self.contents:
+            for _tag in self.contents:
                 if len(found_list) == limit:
                     return found_list
-                found_list.extend(tag.find_tag(name, limit, **kwargs))
+                kwargs['limit'] = -1
+                found_list.extend(_tag.search_tags(name, **kwargs))
         return found_list
+
+    def find_all(self, name, attrs=None, limit=-1, **kwargs):
+        try:
+            attrs.update(kwargs)
+        except AttributeError:
+            attrs = kwargs
+
+        for key in attrs.keys():
+            if re.match('_[^_]+|[^_]+_', key):
+                attrs[key.strip('_')] = attrs[key]
+                del attrs[key]
+
+        attrs['limit'] = limit
+        return self.search_tags(name, **attrs)
 
     def find(self, name, attrs=None, **kwargs):
         try:
-            attrs.updata(kwargs)
+            attrs.update(kwargs)
         except AttributeError:
             attrs = kwargs
-        if '_class' in attrs.keys():
-            attrs['class'] = attrs['_class']
-            del attrs['_class']
+
+        for key in attrs.keys():
+            if re.match('_[^_]+|[^_]+_', key):
+                attrs[key.strip('_')] = attrs[key]
+                del attrs[key]
 
         try:
-            return self.find_tag(name, 1, **attrs)[0]
+            return self.search_tags(name, limit=1, **attrs)[0]
         except IndexError:
             return None
 
@@ -191,41 +211,20 @@ class Tag:
         )
 
     def __str__(self):
-        p = Paper()
-        self.write_down(p)
-        return str(p)
+        from io import StringIO
+        stg = StringIO()
+        self.write_down(stg)
+        return stg.getvalue()
+
+    def __repr__(self):
+        k = 'class'
+        v = self.attrs.get(k, None)
+        if v is None:
+            k, v = self.attrs.popitem()
+        return 'Tag: %s, %s=%s' % (self.name or 'string', k, v)
 
     def __len__(self):
         return len(self.contents)
-
-
-def wrapper_handle_attrs(func):
-    """转化html的标签属性为字典"""
-
-    # 这是一个装饰Parsing.handle_attrs_tmp、Parsing.handle_attrs_tag的装饰器
-    def handle_attrs(self, attrs_str):
-        if attrs_str == '/':
-            return dict()
-        attrs = dict()
-        attrs_list = re.findall(self.attr_reg, attrs_str)
-        for attr in attrs_list:
-            attrs[attr[0]] = func(self, attr)
-        return attrs
-
-    return handle_attrs
-
-
-def except_handle_string(func):
-    """处理字符串"""
-
-    # 捕获stg != '' 的断言装饰器
-    def handle_string(self, stg):
-        try:
-            return func(self, stg)
-        except AssertionError:
-            pass
-
-    return handle_string
 
 
 class Parsing:
@@ -281,7 +280,7 @@ class Parsing:
     start = re.compile('<(\w+)([^<>]*?)(/?)>')
 
     # 从start的匹配结果中匹配属性和属性值（re.findall()）
-    attr_reg = re.compile("""(\w+)\s*=\s*["']([^<>"']*)["']""")
+    attr_reg = re.compile("""([a-zA-Z-]+)\s*=\s*["']([^<>"']*)["']""")
 
     # 匹配字符串
     string = re.compile('([^<>]+)|(<!DOCTYPE html>)')
@@ -298,7 +297,7 @@ class Parsing:
     # 匹配标识符的名称，关于标识符见marks.py
     mark = re.compile(r'__#([a-zA-Z0-9\-]+)#__')  # 下划线 _ 属于 \w，在这里不能用
 
-    SELF_CLOSING = ['img', 'link', 'br', 'hr', 'meta']
+    SELF_CLOSING = ['img', 'link', 'br', 'hr', 'meta', 'input']
 
     def __init__(self):
         self._ofs = 0
@@ -317,11 +316,12 @@ class Parsing:
 
     def arouse_error(self, max_loop):
         """检查解析过程是否正常，不正常将引发ValueError"""
-        if max_loop != 0:
-            return
-        w = 'While loop go beyond the max_loop(%d). ' \
-            'The following words is showed below line.' % len(self._tag)
-        raise ValueError('%s\n%s\n\n%s' % (w, '-' * (len(w) + 12), self._tag[self._ofs:]))
+        if max_loop == 0:
+            w = 'While loop go beyond the max_loop(%d). ' \
+                'The following words is showed below line.' % len(self._tag)
+            raise ValueError('%s\n%s\n\n%s' % (w, '-' * (len(w) + 12), self._tag[self._ofs:]))
+        if len(self._stack) != 0:
+            raise TagParseError()
 
     def replace(self, stg):
         """处理html模板中的字符串并替换标识符的值"""
@@ -335,15 +335,15 @@ class Parsing:
     def parse_tag(self, tag):
         """解析html标签生成Tag并返回由Tags构成的列表"""
         self._tag = tag
-        return self.parsing(funcs=(self.handle_start_tag, self.handle_string_tag,
-                                   self.handle_end, self.handle_comment))
+        return self.parsing(funcs=(
+            self.handle_start_tag, self.handle_string_tag, self.handle_end, self.handle_comment))
 
     def parse_tmp(self, tmp, marks_val):
         """解析html模板生成Tag，并在解析过程中将模板上的占位符替换成marks_val提供的对应值"""
         self._tag = tmp
         self._marks_value = marks_val
-        return self.parsing(funcs=(self.handle_start_tmp, self.handle_string_tmp,
-                                   self.handle_end, self.handle_comment))
+        return self.parsing(funcs=(
+            self.handle_start_tmp, self.handle_string_tmp, self.handle_end, self.handle_comment))
 
     def parsing(self, funcs):
         """解析html标签"""
@@ -415,9 +415,12 @@ class Parsing:
 
     def handle_start(self, r, make_attrs):
         """处理起始标签"""
+        if r.group(3) == '/':
+            if r.group(1) not in self.SELF_CLOSING:
+                self.SELF_CLOSING.append(r.group(1))
+
         if r.group(1) in self.SELF_CLOSING:
-            n = Tag(r.group(1),
-                    attrs=make_attrs(r.group(2) if len(r.groups()) != 1 else '/'))
+            n = Tag(r.group(1), attrs=make_attrs(r.group(2) if len(r.groups()) != 1 else '/'))
             # 可以确定它没有contents，直接append到content_list或add到stack
             if len(self._stack) == 0:
                 self._contents_list.append(n)
@@ -461,11 +464,10 @@ class TagGenerate(Parsing):
 
     def __init__(self):
         super(TagGenerate, self).__init__()
-        self.CONFIG = Config.init()
 
     def template(self, name):
         try:
-            return self.CONFIG.get_setting('tag/%s' % name)
+            return config.get_setting('tag/%s' % name)
         except KeyError:
             raise KeyError('not find template named %s.' % name)
 
@@ -494,12 +496,13 @@ class TagGenerate(Parsing):
         mas_val = {'article-origin': meta.original_url,
                    'user-avatar': meta.author_avatar_url,
                    'user-name': meta.author,
-                   'user-link': meta.author_page,
+                   'user-link': meta.author_homepage,
                    'created-date': meta.created_date,
                    'title': meta.title,
                    'background-image': meta.background
                    }
-        title = self.generate_tag_by_template(self.template('header'), marks_value=mas_val)
+        header = ['header', 'header_simple'][meta.pattern]
+        title = self.generate_tag_by_template(self.template(header), marks_value=mas_val)
         if not (meta.background is None or meta.background == ''):
             title.contents.insert(
                 0,
@@ -517,30 +520,30 @@ class TagGenerate(Parsing):
         return self.generate_tag_by_template(self.template('video'), marks_value=mas_val)
 
     def reference_index(self, index):
-        return self.generate_tag_by_template(self.template('ref_ind'), {'index': str(index)})
+        return self.generate_tag_by_template(self.template('ref_ind'), {'index': index})
 
     def reference_table(self, ref_title_url):
         table = Tag('table', attrs={'class': 'reference'})
-        index = 1
-        for title, url in ref_title_url:
+        for ref in ref_title_url:
             mas_val = {
-                'index': str(index),
-                'ref-url': url,
-                'ref-title': title
+                'index': ref.get('index'),
+                'ref-url': ref.get('url'),
+                'ref-title': ref.get('text')
             }
             table.push(self.generate_tag_by_template(self.template('quo'), mas_val))
-            index += 1
         return table
 
 
 class Mushroom(Tag):
 
-    def __init__(self, web_title, css_output=False):
+    def __init__(self, content, meta, css_output=False, printing=True):
         Tag.__init__(self, 'html', attrs={'lang': 'zh'})
+        self.content = content
+        self.meta = meta
         self.head = Tag('head')
         self.body = Tag('body')
         self.feed2head(Tag('meta', attrs={'charset': 'UTF-8'}))
-        self.feed2head(Tag('title', string=web_title))
+        self.feed2head(Tag('title', string=meta.title))
         self.push(self.head, self.body)
         self.title = None
         self.text = None
@@ -548,6 +551,12 @@ class Mushroom(Tag):
         self.css_output = css_output
         self.stylesheets = list()
         self.image_list = list()
+
+        if printing:
+            self.feed2head(
+                Tag('link', attrs={'rel': 'stylesheet', 'type': 'text/css', 'href': 'print.css',
+                                   'media': 'print'})
+            )
 
     @property
     def article(self):
@@ -567,12 +576,14 @@ class Mushroom(Tag):
         """link stylesheet file in html link tag"""
         for stylesheet in self.stylesheets:
             self.feed2head(
-                Tag('link', attrs={'rel': 'stylesheet', 'type': 'text/css', 'href': stylesheet['file_name']}))
+                Tag('link', attrs={'rel': 'stylesheet', 'type': 'text/css',
+                                   'href': stylesheet['file_name']}))
 
     def insert_css_code(self):
         """insert stylesheet code in html style tag"""
         for stylesheet in self.stylesheets:
-            self.feed2head(Tag('style', attrs={'type': 'text/css'}, string=stylesheet['format_code']))
+            self.feed2head(
+                Tag('style', attrs={'type': 'text/css'}, string=stylesheet['format_code']))
 
     def output_css_code(self):
         """return stylesheets for output or other else"""
@@ -595,100 +606,121 @@ class Mushroom(Tag):
         self.article.push(self.title)
         self.article.push(self.text)
 
-    def write_down(self, paper, indent=0):
+    def write_down(self, outfile, indent=0):
+        Formatter(self.content).formatter(self.meta, self)
         self.commit_article()
-        paper.write('<!DOCTYPE html>\n')
         if self.css_output:
             self.link_css_file()
         else:
             self.insert_css_code()
-        return super(Mushroom, self).write_down(paper)
+        outfile.write('<!DOCTYPE html>\n')
+        return super(Mushroom, self).write_down(outfile)
 
 
-class Compile(TagGenerate):
+class Formatter(TagGenerate):
 
-    def __init__(self, tag_text: str):
+    def __init__(self, content):
         TagGenerate.__init__(self)
-        self.tag_list = self.parse_tag(tag_text)
-        self.ref_list = list()
+        self.tag_list = self.parse_tag(content)
+        self.reference_list = list()
         self.ref_ind = 1
         self.style_meta = set()
         self.style_meta.add('styleText')
         self.style_meta.add('styleMod')
         self.image_list = list()
 
-    def compile(self, meta, otp: Mushroom):
+    def formatter(self, meta, otp: Mushroom):
         """处理Tags，修改属性、生成视频标签等"""
-        r = self._compile(self.tag_list)
-        if len(self.ref_list) != 0:
+        r = self.format(self.tag_list)
+
+        if len(self.reference_list) != 0:
             r.append(Tag('span', attrs={'style': 'font-size:24px'}, string='参考资料'))
-            n = self.reference_table(self.ref_list)
+            n = self.reference_table(self.reference_list)
             r.append(n)
+
         otp.insert_article_title(self.article_tile(meta))
         otp.insert_article_text(self.article_text(*r))
+
         for stylesheet in self.style_meta:
-            otp.stylesheets.append(self.CONFIG.get_setting('head/style/%s' % stylesheet))
+            otp.stylesheets.append(config.get_setting('head/style/%s' % stylesheet))
         otp.image_list = self.image_list
+
         return otp
 
-    def _compile(self, contents):
+    def format(self, contents):
         """处理Tags"""
         contents_list = list()
         for tag in contents:
             if tag.name in ('a', 'div', 'figure', 'img', 'sup'):
-                contents_list.append(
-                    self.__getattribute__(tag.name)(tag, len(contents)))
+                contents_list.append(getattr(self, tag.name)(tag))
                 continue
-            tag.contents = self._compile(tag.contents)
+            tag.contents = self.format(tag.contents)
             self._remove_attrs(tag)
             contents_list.append(tag)
         return contents_list
 
-    def figure(self, tag, sibling):
+    def figure(self, tag):
         """处理figure标签，图片"""
-        img = tag.find('img', _class='lazy')
-        url = img.get_attrs('original') or img.get_attrs('actualsrc')
+
+        try:
+            img = tag.find('img', _class='lazy')
+            url = img.get_attrs('data-original') or img.get_attrs('data-actualsrc')
+        except AttributeError:
+            img = tag.find('img')
+            url = img.get_attrs('data-original') or img.get_attrs('src')
+
         if not re.match(r'^https?', img.get_attrs('src')):
             url = re.sub(r'\.[a-z]+$', '.gif', url)
+
         self.image_list.append(url)
+
         return Tag('figure', contents=[Tag('img', attrs={'src': url}), tag.find('figcaption')])
 
-    def img(self, tag, sibling):
+    def img(self, tag):
         """处理数学公式"""
         return tag
 
-    def div(self, tag, sibling):
+    def div(self, tag):
         """处理div标签，代码"""
         self.style_meta.add('styleCode')
         language = re.search('language-([^"]+)', tag.string).group(1)
         code = self.highlight_code(tag.string, language)
         return Tag('div', attrs={'class': 'highlight'}, string=code)
 
-    def a(self, tag, sibling):
+    def a(self, tag):
         """处理a标签，视频、卡片链接、广告、普通链接"""
-        if tag.find('a', **{'class': 'video-box'}) is not None:
+        if tag.find('a', attrs={'class': 'video-box'}) is not None:
             return self._make_video_box(tag)
-        elif tag.find('a', **{'type': 'link-card'}) is not None:
+        elif tag.find('a', attrs={'type': 'link-card'}) is not None:
             return self._make_link_card(tag)
-        elif tag.find('a', **{'tag': 'block'}) is not None:
+        elif tag.find('a', attrs={'data-draft-type': 'mcn-link-card'}) is not None:
             # 广告，tag自动过滤None
             return None
         else:
             return tag
 
-    def sup(self, tag, sibling):
+    def sup(self, tag):
         """处理sup标签，知乎标准的文献引用样式"""
-        self.ref_list.append((tag.get_attrs('text') or tag.get_attrs('url'), tag.get_attrs('url')))
-        self.ref_ind += 1
-        return self.reference_index(self.ref_ind - 1)
+        data_url = tag.get_attrs('data-url')
+        index = tag.get_attrs('data-numero')
+        data_text = tag.get_attrs('data-text')
+
+        self.reference_list.append(
+            {'text': data_text or data_url, 'url': data_url, 'index': index})
+
+        return self.reference_index(index)
 
     def _make_video_box(self, tag):
         """生成视频标签"""
-        return self.video_box(
-            video_link=tag.find('span', _class='url').string,
-            cover_link=tag.find('img').get_attrs('src'),
-            tip=tag.find('span', **{'class': 'title'}).string
-        )
+        try:
+            return self.video_box(
+                video_link=tag.find('span', _class='url').string,
+                cover_link=tag.find('img').get_attrs('src'),
+                tip=tag.find('span', **{'class': 'title'}).string
+            )
+        except AttributeError as e:
+            print(tag)
+            raise e
 
     def _make_link_card(self, tag):
         """生成卡片链接标签"""
@@ -724,10 +756,8 @@ class Compile(TagGenerate):
         return HtmlFormatter(style=theme, nowrap=True, cssclass='highlight').get_style_defs()
 
 
-def highlight_code(code, language, theme='default'):
-    html_formatter = HtmlFormatter(style=theme, nowrap=True)
-    return highlight(code, get_lexer_by_name(language, stripall=True), html_formatter)
-
-
 if __name__ == '__main__':
-    pass
+    tag = open(r"C:\Users\Milloy\Desktop\collection.html", 'r', encoding='utf8').read()
+    p = Parsing()
+    tg = p.parse_tag(tag)
+    print(len(tg), tg[0])

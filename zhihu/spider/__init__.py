@@ -1,37 +1,37 @@
-from zhihu.spider.column import *
-from zhihu.spider.core import get_item_with_id
-from zhihu.spider.question import *
+import re
+
+from zhihu.conf import config
+from zhihu.spider.core import HandleError
+
+item_map = {
+    'answer': 'https?://www.zhihu.com/question/\d+/answer/(\d+)',
+    'column': 'https?://zhuanlan.zhihu.com/(.+)',
+    'article': 'https?://zhuanlan.zhihu.com/p/(\d+)',
+    'question': 'https?://www.zhihu.com/question/(\d+)',
+    'user_answers': 'https?://www.zhihu.com/people/([^/]+)/answers',
+    'user_articles': 'https?://www.zhihu.com/people/([^/]+)/posts',
+    'collection': 'https?://www.zhihu.com/collection/(\d+)(?:\?page=\d+)?'
+}
 
 
+def load_function(name):
+    mod = __import__('zhihu.spider.manage', None, None, ['__all__'])
+    return getattr(mod, name)
+
+
+@HandleError.catch_error
 def start_with_id(item_id, item_type):
-    if item_type == 'article':
-        get_item_with_id(item_id, html_func=article2html, md_func=article2md)
-    elif item_type == 'answer':
-        get_item_with_id(item_id, html_func=answer2html, md_func=answer2md)
-    elif item_type == 'column':
-        column(item_id)
-    elif item_type == 'question':
-        question(item_id)
-    # TODO OUTPUT TAG
-    print('保存目录：%s' % Config.CONF.wh())
+    load_function(item_type)(item_id)
+    print('保存目录：%s' % config.wh())
 
 
 def start(item_link):
-    Config.init()
-    item_id, item_type = get_id(item_link)
-    start_with_id(item_id, item_type)
+    start_with_id(*get_id(item_link))
 
 
 def get_id(item_link):
-    for reg, ty in zip(
-            ('^https?.+?zhuanlan.zhihu.com/([\w\d]+)$',
-             '^https?.+?zhuanlan.zhihu.com/p/(\d+)$',
-             '^https?.+?question/(\d+)$',
-             '^https?.+?answer/(\d+)$'),
-
-            ('column', 'article', 'question', 'answer')
-    ):
-        r = re.search(reg, item_link)
+    for item_type, item_reg in item_map.items():
+        r = re.match(item_reg, item_link)
         if bool(r):
-            return r.group(1), ty
+            return r.group(1), item_type
     raise ValueError('can not find the item id.')

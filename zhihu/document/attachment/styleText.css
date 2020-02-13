@@ -13,10 +13,9 @@ body {
 }
 
 .article {
-  max-width: 45em;
+  max-width: 50em;
   margin: 0px auto;
-  padding: 50px;
-  margin-bottom: 10px;
+  padding: 6em;
   background: #fff;
   overflow: hidden;
   border-radius: 2px;

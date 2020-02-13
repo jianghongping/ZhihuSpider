@@ -1,40 +1,21 @@
 import os
 import pickle
 
+import zhihu.conf.config as zcc
+
+__all__ = ['config']
+
 
 class Config:
     """程序配置信息"""
 
-    CONFIG_FILE = r'zhihu\conf\config'
-    CONF = None
+    def __init__(self):
+        self.config = zcc.config
+        self.root_warehouse = self.default_wh()
 
-    @classmethod
-    def init(cls):
-        """初始化全局配置文件"""
-        try:
-            config_msg = os.path.join(os.getcwd(), Config.CONFIG_FILE)
-            assert os.path.exists(config_msg)
-        except AssertionError:
-            from zhihu.conf.config import config
-            config_msg = config
-
-        if cls.CONF is None:
-            cls.CONF = Config(config_msg)
-        return cls.CONF
-
-    def __init__(self, file):
-        try:
-            self.config = pickle.loads(open(file, 'rb').read())
-            self.file = file
-        except TypeError:
-            if isinstance(file, dict):
-                self.config = file
-                self.file = None
-
-    def save(self):
-        if self.file is not None:
-            with open(self.file, 'wb') as foo:
-                pickle.dump(self.config, foo)
+    def save(self, file):
+        with open(file, 'wb') as foo:
+            pickle.dump(self.config, foo)
 
     def __getitem__(self, key):
         return self.config[key]
@@ -77,8 +58,10 @@ class Config:
             return self.default_wh()
 
     def _warehouse(self, path):
-        if '~' in path:
-            path = os.path.normpath(os.path.join(self.warehouse(), path.strip('~')))
+        if path.startswith('~'):
+            path = os.path.normpath(os.path.join(self.root_warehouse, path.strip('~')))
+        else:
+            self.root_warehouse = path
         try:
             os.makedirs(path)
         except FileExistsError:
@@ -122,3 +105,15 @@ class Config:
             return region
         except KeyError:
             raise KeyError('There is no setting option named %s.' % key)
+
+
+config = Config()
+
+
+if __name__ == '__main__':
+    a = config.warehouse()
+    print(a)
+    config.warehouse(r'C:\Users\Milloy\Desktop')
+    config.warehouse('~collection/菜汤')
+    a = config.warehouse()
+    print(a)

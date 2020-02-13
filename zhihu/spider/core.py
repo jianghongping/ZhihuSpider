@@ -122,30 +122,22 @@ class Crawler(requests.Session, API):
 
     @HandleError.verity
     def get_network_data_package(self, item_name, item_id, **kwargs):
-        url = self.get_url(item_name, item_id, **kwargs)
-        return self.get(url, timeout=30)
+        resp = self.get(self.get_url(item_name, item_id, **kwargs), timeout=30)
+        if config.get_setting('running/cached'):
+            self.cached_network_data(resp, item_name, item_id, **kwargs)
+        return resp
 
     def download(self, url, **kwargs):
         return self.get(url, timeout=30, **kwargs)
 
-
-def cached(func):
-    """缓存原始数据（已停用）"""
-
-    def cached_func(self, *args, **kwargs):
-        res = func(self, *args, **kwargs)
-        if config.get_setting('running/cached') is True:
-            itd = kwargs.get('item_id', args[0])
-            try:
-                ofs = kwargs.get('offset', args[1])
-            except IndexError:
-                ofs = timer.timestamp_str()
-            file = os.path.join(config.cached_warehouse(), '%s-%s.json' % (itd, ofs))
-            with open(file, 'w', encoding='utf8') as foo:
-                foo.write(res.text)
-        return res
-
-    return cached_func
+    @classmethod
+    def cached_network_data(cls, data, item_name, item_id, **kwargs):
+        """缓存原始数据（已停用）"""
+        ofs = kwargs.get('offset', None) or kwargs.get('page', None) or timer.timestamp_str()
+        file = os.path.join(config.cached_warehouse(), '%s-%s-%s.json' % (item_name, item_id, ofs))
+        with open(file, 'w', encoding='utf8') as foo:
+            foo.write(data.text)
+        return file
 
 
 def format_path(path):

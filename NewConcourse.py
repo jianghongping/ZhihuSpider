@@ -7,5 +7,5 @@ config.setting('running/cached', False)
 config.setting('running/css_output', False)
 config.setting('running/download_image', False)
 config.setting('running/cover', False)
-zhihu.spider.start(r'https://www.zhihu.com/question/371351587/answer/1012291312')
+zhihu.spider.start(r'https://www.zhihu.com/question/371351587')
 

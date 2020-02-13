@@ -69,15 +69,10 @@ class Document:
     @classmethod
     def make_document(cls, meta, cont):
         """根据所给的cont和meta生成html或markdown文件"""
-        # TODO DEBUG TAG CLEAR AFTER FINISH!
-        # 项目测试，同时生成html和markdown文件
-        # if config.get_setting('running/file_type') == cls.DEFAULT_TYPE:
-        #     return cls.item2html(cont, meta)
-        # else:
-        #     return cls.item2md(cont, meta)
-        cls.item2html(cont, meta)
-        return cls.item2md(cont, meta)
-
+        if config.get_setting('running/file_type') == cls.DEFAULT_TYPE:
+            return cls.item2html(cont, meta)
+        else:
+            return cls.item2md(cont, meta)
 
 
 def show_info(meta):

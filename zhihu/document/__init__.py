@@ -28,6 +28,8 @@ class Meta:
 
 
 class Document:
+    index = 1
+
     DOC_TYPES = {'html': 0, 'md': 1, 'markdown': 1}
     DEFAULT_TYPE = DOC_TYPES.get('html', 0)
 
@@ -53,30 +55,31 @@ class Document:
             for css in stylesheets:
                 with open(format_file_name('css', css['file_name']), 'w', encoding='utf8') as foo:
                     foo.write(css['code'])
-        if config.get_setting('running/download_image'):
-            cls.download_image(mushroom)
-        show_info(meta)
+        return mushroom
 
     @classmethod
     def item2md(cls, cont, meta):
         md = markdown.Markdown(cont, meta)
         with open(format_file_name('md', meta.author, meta.title), 'w', encoding='utf8') as foo:
             md.write_down(foo)
-        if config.get_setting('running/download_image'):
-            cls.download_image(md)
-        show_info(meta)
+        return md
 
     @classmethod
     def make_document(cls, meta, cont):
         """根据所给的cont和meta生成html或markdown文件"""
         if config.get_setting('running/file_type') == cls.DEFAULT_TYPE:
-            return cls.item2html(cont, meta)
+            doc = cls.item2html(cont, meta)
         else:
-            return cls.item2md(cont, meta)
+            doc = cls.item2md(cont, meta)
 
+        if config.get_setting('running/download_image'):
+            cls.download_image(doc)
+        cls.show_info(meta)
 
-def show_info(meta):
-    print('%5d\t%s\t《%s》' % (meta.voteup, meta.author, meta.title))
+    @classmethod
+    def show_info(cls, meta):
+        print('{:>5d}\t{}\t{}'.format(cls.index, meta.title, meta.author))
+        cls.index += 1
 
 
 def format_path(path):

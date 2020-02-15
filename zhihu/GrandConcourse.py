@@ -1,6 +1,7 @@
 import argparse
-import sys
 import re
+import sys
+
 import zhihu.spider
 from zhihu.conf import config
 

@@ -120,9 +120,14 @@ class Crawler(requests.Session, API):
         super().__init__()
         self.headers.update(Crawler.UA)
 
-    @HandleError.verity
     def get_network_data_package(self, item_name, item_id, **kwargs):
         resp = self.get(self.get_url(item_name, item_id, **kwargs), timeout=30)
+        try:
+            resp.raise_for_status()
+        except HTTPError:
+            raise VerityError(status_code=resp.status_code, url=resp.url)
+        except MissingSchema:
+            raise ValueError('url error: ', item_name, item_id, kwargs)
         if config.get_setting('running/cached'):
             self.cached_network_data(resp, item_name, item_id, **kwargs)
         return resp

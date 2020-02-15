@@ -196,8 +196,8 @@ class Tag:
         for attr, value in attrs.items():
             attr_val = self.attrs.get(attr, None)
             try:
-                attr_vas = re.split('\s+', attr_val)
-                vas = re.split('\s+', value) if isinstance(value, str) else value
+                attr_vas = re.split(r'\s+', attr_val)
+                vas = re.split(r'\s+', value) if isinstance(value, str) else value
                 for v in vas:
                     if v not in attr_vas:
                         return False
@@ -277,22 +277,22 @@ class Parsing:
     # 需要特殊处理ofs
 
     # 匹配起始标签和属性
-    start = re.compile('<(\w+)([^<>]*?)(/?)>')
+    start = re.compile(r'<(\w+)([^<>]*?)(/?)>')
 
     # 从start的匹配结果中匹配属性和属性值（re.findall()）
-    attr_reg = re.compile("""([a-zA-Z-]+)\s*=\s*["']([^<>"']*)["']""")
+    attr_reg = re.compile(r"""([a-zA-Z-]+)\s*=\s*["']([^<>"']*)["']""")
 
     # 匹配字符串
-    string = re.compile('([^<>]+)|(<!DOCTYPE html>)')
+    string = re.compile(r'([^<>]+)|(<!DOCTYPE html>)')
 
     # 匹配尾标签
-    end = re.compile('</(\w+)>')
+    end = re.compile(r'</(\w+)>')
 
     # 匹配注释
     comment = re.compile(r'<!--[\s\S]*?-->')
 
     # 匹配code或pre标签内的代码，包括给代码添加样式的span标签
-    code_reg = re.compile('(<code[^<>]*?>[\s\S]+?</code>)|(<pre[^<>]*?>[\s\S]*?</pre>)')
+    code_reg = re.compile(r'(<code[^<>]*?>[\s\S]+?</code>)|(<pre[^<>]*?>[\s\S]*?</pre>)')
 
     # 匹配标识符的名称，关于标识符见marks.py
     mark = re.compile(r'__#([a-zA-Z0-9\-]+)#__')  # 下划线 _ 属于 \w，在这里不能用
@@ -465,7 +465,8 @@ class TagGenerate(Parsing):
     def __init__(self):
         super(TagGenerate, self).__init__()
 
-    def template(self, name):
+    @classmethod
+    def template(cls, name):
         try:
             return config.get_setting('tag/%s' % name)
         except KeyError:
@@ -488,8 +489,9 @@ class TagGenerate(Parsing):
         name = 'lc_img' if img is not None else 'lc_svg'
         return self.generate_tag_by_template(self.template(name), marks_value=mas_val)
 
-    def article_text(self, *conts):
-        return Tag('div', attrs={'class': 'text'}, contents=list(conts))
+    @classmethod
+    def article_text(cls, *contents):
+        return Tag('div', attrs={'class': 'text'}, contents=list(contents))
 
     def article_tile(self, meta):
 
@@ -682,8 +684,16 @@ class Formatter(TagGenerate):
 
     def div(self, tag):
         """处理div标签，代码"""
+        if tag.get_attrs('class', None) != 'highlight':
+            return None
+
         self.style_meta.add('styleCode')
-        language = re.search('language-([^"]+)', tag.string).group(1)
+
+        try:
+            language = re.search('language-([^"]+)', tag.string).group(1)
+        except AttributeError:
+            language = 'text'
+
         code = self.highlight_code(tag.string, language)
         return Tag('div', attrs={'class': 'highlight'}, string=code)
 
@@ -724,11 +734,10 @@ class Formatter(TagGenerate):
 
     def _make_link_card(self, tag):
         """生成卡片链接标签"""
-        # TODO 排除bug
         url = tag.get_attrs('href')
         img = tag.get_attrs('image')
         if re.search('zhihu', url) and img is None:
-            img = 'https://zhstatic.zhihu.com/assets/zhihu/editor/zhihu-card-default.svg'
+            img = config.get_setting('Formatter/link_card_default_image')
         return self.link_card(
             url=url,
             title=tag.string,
@@ -754,10 +763,3 @@ class Formatter(TagGenerate):
     @classmethod
     def code_css_sheet(cls, theme):
         return HtmlFormatter(style=theme, nowrap=True, cssclass='highlight').get_style_defs()
-
-
-if __name__ == '__main__':
-    tag = open(r"C:\Users\Milloy\Desktop\collection.html", 'r', encoding='utf8').read()
-    p = Parsing()
-    tg = p.parse_tag(tag)
-    print(len(tg), tg[0])

@@ -4,13 +4,13 @@ from zhihu.conf import config
 from zhihu.spider.core import HandleError
 
 item_map = {
-    'answer': 'https?://www.zhihu.com/question/\d+/answer/(\d+)',
-    'column': 'https?://zhuanlan.zhihu.com/(.+)',
-    'article': 'https?://zhuanlan.zhihu.com/p/(\d+)',
-    'question': 'https?://www.zhihu.com/question/(\d+)',
-    'user_answers': 'https?://www.zhihu.com/people/([^/]+)/answers',
-    'user_articles': 'https?://www.zhihu.com/people/([^/]+)/posts',
-    'collection': 'https?://www.zhihu.com/collection/(\d+)(?:\?page=\d+)?'
+    'answer': r'https?://www.zhihu.com/question/\d+/answer/(\d+)',
+    'column': r'https?://zhuanlan.zhihu.com/(.+)',
+    'article': r'https?://zhuanlan.zhihu.com/p/(\d+)',
+    'question': r'https?://www.zhihu.com/question/(\d+)',
+    'user_answers': r'https?://www.zhihu.com/people/([^/]+)/answers',
+    'user_articles': r'https?://www.zhihu.com/people/([^/]+)/posts',
+    'collection': r'https?://www.zhihu.com/collection/(\d+)(?:\?page=\d+)'
 }
 
 
@@ -26,10 +26,10 @@ def start_with_id(item_id, item_type):
 
 
 def start(item_link):
-    start_with_id(*get_id(item_link))
+    start_with_id(*parse_url(item_link))
 
 
-def get_id(item_link):
+def parse_url(item_link):
     for item_type, item_reg in item_map.items():
         r = re.match(item_reg, item_link)
         if bool(r):

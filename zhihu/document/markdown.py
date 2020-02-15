@@ -159,9 +159,11 @@ class Formatter:
 
     @classmethod
     def code(cls, **kwargs):
+        if kwargs.get('tag').get_attrs('class', None) != 'highlight':
+            return ''
         try:
             lang = re.sub(
-                r'[\d+\s]+', '',
+                r'[+\d\s]+', '',
                 re.search(r'"language-([^()]+)">', kwargs.get('tag').string).group(1)
             )
         except AttributeError:

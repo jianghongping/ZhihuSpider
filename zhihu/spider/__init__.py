@@ -4,13 +4,17 @@ from zhihu.conf import config
 from zhihu.spider.core import HandleError
 
 item_map = {
-    'answer': r'https?://www.zhihu.com/question/\d+/answer/(\d+)',
-    'column': r'https?://zhuanlan.zhihu.com/(.+)',
-    'article': r'https?://zhuanlan.zhihu.com/p/(\d+)',
-    'question': r'https?://www.zhihu.com/question/(\d+)',
-    'user_answers': r'https?://www.zhihu.com/people/([^/]+)/answers',
-    'user_articles': r'https?://www.zhihu.com/people/([^/]+)/posts',
-    'collection': r'https?://www.zhihu.com/collection/(\d+)(?:\?page=\d+)'
+    'answer': [r'https?://www.zhihu.com/question/\d+/answer/(\d+)',
+               r'https://www.zhihu.com/answer/(\d+)'],
+
+    'column': [r'https?://zhuanlan.zhihu.com/(.+)'],
+
+    'article': [r'https?://zhuanlan.zhihu.com/p/(\d+)'],
+
+    'question': [r'https?://www.zhihu.com/question/(\d+)'],
+    'user_answers': [r'https?://www.zhihu.com/people/([^/]+)/answers'],
+    'user_articles': [r'https?://www.zhihu.com/people/([^/]+)/posts'],
+    'collection': [r'https?://www.zhihu.com/collection/(\d+)(?:\?page=\d+)']
 }
 
 
@@ -30,8 +34,9 @@ def start(item_link):
 
 
 def parse_url(item_link):
-    for item_type, item_reg in item_map.items():
-        r = re.match(item_reg, item_link)
-        if bool(r):
-            return r.group(1), item_type
-    raise ValueError('can not find the item id.')
+    for item_type, item_regs in item_map.items():
+        for item_reg in item_regs:
+            r = re.match(item_reg, item_link)
+            if bool(r):
+                return r.group(1), item_type
+    raise ValueError('can not find the item id. url: %s' % item_link)

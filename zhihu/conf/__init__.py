@@ -107,7 +107,7 @@ class Config:
             raise KeyError('There is no setting option named %s.' % key)
 
 
-config = Config()
+config: Config = Config()
 
 
 if __name__ == '__main__':

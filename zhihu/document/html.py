@@ -664,15 +664,8 @@ class Formatter(TagGenerate):
     def figure(self, tag):
         """处理figure标签，图片"""
 
-        try:
-            img = tag.find('img', _class='lazy')
-            url = img.get_attrs('data-original') or img.get_attrs('data-actualsrc')
-        except AttributeError:
-            img = tag.find('img')
-            url = img.get_attrs('data-original') or img.get_attrs('src')
-
-        if not re.match(r'^https?', img.get_attrs('src')):
-            url = re.sub(r'\.[a-z]+$', '.gif', url)
+        img = tag.find('img')
+        url = img.get_attrs('data-original') or img.get_attrs('src')
 
         self.image_list.append(url)
 

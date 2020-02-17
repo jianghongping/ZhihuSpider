@@ -36,6 +36,7 @@ class Document:
     @classmethod
     def download_image(cls, doc):
         cra = Crawler()
+        index = 1
         for image_url in doc.image_list:
             file_name = os.path.basename(image_url)
             path = os.path.join(config.wh(), 'image')
@@ -43,7 +44,8 @@ class Document:
                 os.makedirs(path)
             with open(os.path.join(path, file_name), 'wb') as foo:
                 foo.write(cra.download(image_url).content)
-                print(file_name)
+                print('{:<4d}\t{}'.format(index, file_name))
+                index += 1
 
     @classmethod
     def item2html(cls, cont, meta):

@@ -107,7 +107,7 @@ class AnswerManage(ItemManage):
     def run(self):
         resp = self.get_network_data_package(self.item_name, self.item_id)
         self.handle_data(resp.json())
-
+        
 
 class QuestionManage(AnswerManage):
     item_name = 'question'
@@ -120,7 +120,7 @@ class QuestionManage(AnswerManage):
                                     response.text).group(1)
         # title = codecs.decode(title, 'unicode_escape')
         config.warehouse('~question/%s' % format_path(self.item_words))
-
+    
     def run(self):
         self._run(size=40)
 
@@ -147,7 +147,7 @@ class ArticleManage(ItemManage):
         meta.author_avatar_url = data['author']['avatar_url_template'].format(size='l')
 
         return meta, data.get('content')
-
+    
     def run(self):
         resp = self.get_network_data_package(self.item_name, self.item_id)
         self.handle_data(resp.json())
@@ -166,7 +166,7 @@ class ColumnManage(ArticleManage):
 
     def handle_data(self, data):
         article(data.get('id', None))
-
+    
     def run(self):
         self._run(size=60)
 

@@ -178,15 +178,8 @@ class Formatter:
 
     @classmethod
     def figure(cls, **kwargs):
-        try:
-            img = kwargs.get('tag').find('img', _class='lazy')
-            url = img.get_attrs('data-original') or img.get_attrs('data-actualsrc')
-        except AttributeError:
-            img = kwargs.get('tag').find('img')
-            url = img.get_attrs('data-original') or img.get_attrs('src')
-
-        if not re.match(r'^https?', img.get_attrs('src')):
-            url = re.sub(r'\.[a-z]+$', '.gif', url)
+        img = kwargs.get('tag').find('img')
+        url = img.get_attrs('data-original') or img.get_attrs('src')
 
         kwargs.get('image_list').append(url)
 

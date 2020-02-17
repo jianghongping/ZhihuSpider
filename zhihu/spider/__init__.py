@@ -4,17 +4,17 @@ from zhihu.conf import config
 from zhihu.spider.core import HandleError
 
 item_map = {
-    'answer': [r'https?://www.zhihu.com/question/\d+/answer/(\d+)',
-               r'https://www.zhihu.com/answer/(\d+)'],
+    'answer': [r'https?://www.zhihu.com/question/\d+/answer/(\d+)$',
+               r'https://www.zhihu.com/answer/(\d+)$'],
 
-    'column': [r'https?://zhuanlan.zhihu.com/(.+)'],
+    'column': [r'https?://zhuanlan.zhihu.com/([^/]+)$'],
 
-    'article': [r'https?://zhuanlan.zhihu.com/p/(\d+)'],
+    'article': [r'https?://zhuanlan.zhihu.com/p/(\d+)$'],
 
-    'question': [r'https?://www.zhihu.com/question/(\d+)'],
-    'user_answers': [r'https?://www.zhihu.com/people/([^/]+)/answers'],
-    'user_articles': [r'https?://www.zhihu.com/people/([^/]+)/posts'],
-    'collection': [r'https?://www.zhihu.com/collection/(\d+)(?:\?page=\d+)']
+    'question': [r'https?://www.zhihu.com/question/(\d+)$'],
+    'user_answers': [r'https?://www.zhihu.com/people/([^/]+)/answers$'],
+    'user_articles': [r'https?://www.zhihu.com/people/([^/]+)/posts$'],
+    'collection': [r'https?://www.zhihu.com/collection/(\d+)(?:\?page=\d+)$']
 }
 
 

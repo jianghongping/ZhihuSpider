@@ -259,7 +259,7 @@ class CollectionManage(ItemManage):
 
         if data.get_attrs('data-type') == 'Answer':
             head = data.find('div', _class='answer-head')
-            original_url += config.get_setting('API/host')
+            original_url = config.get_setting('API/host') + original_url
         else:
             head = data.find('div', _class='post-head')
 
@@ -273,9 +273,8 @@ class CollectionManage(ItemManage):
             try:
                 author = head.find('span', _class='name')
                 meta.author = author.string
-                meta.author_homepage = config.get_setting('API/host')
+                meta.author_homepage = config.get_setting('API/host') + author.get_attrs('href')
             except AttributeError:
-                print(head)
                 raise
 
         meta.voteup = int(head.find('div', _class='zm-item-vote-info').get_attrs('data-votecount'))

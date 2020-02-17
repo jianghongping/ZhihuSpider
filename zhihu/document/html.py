@@ -127,18 +127,15 @@ class Tag:
                 s.append(c.string.strip() if strip else c.string)
             return split.join(s)
 
-    def search_tags(self, name, **kwargs):
-        limit = kwargs.get('limit', -1)
+    def search_tags(self, name, limit, **kwargs):
         found_list = list()
-        kwargs.pop('limit', None)
         if self.name == name and self._attrs_match(kwargs):
             found_list.append(self)
         else:
             for _tag in self.contents:
                 if len(found_list) == limit:
                     return found_list
-                kwargs['limit'] = -1
-                found_list.extend(_tag.search_tags(name, **kwargs))
+                found_list.extend(_tag.search_tags(name, limit, **kwargs))
         return found_list
 
     def find_all(self, name, attrs=None, limit=-1, **kwargs):
@@ -152,8 +149,7 @@ class Tag:
                 attrs[key.strip('_')] = attrs[key]
                 del attrs[key]
 
-        attrs['limit'] = limit
-        return self.search_tags(name, **attrs)
+        return self.search_tags(name, limit, **attrs)
 
     def find(self, name, attrs=None, **kwargs):
         try:
@@ -182,14 +178,6 @@ class Tag:
                     '%s tag no attribute named "%s".' % (self.name, item)
                 )
             return default
-
-    def __getitem__(self, item):
-        try:
-            return self.attrs[item]
-        except KeyError:
-            raise AttributeError(
-                '%s tag no attribute named "%s".' % (self.name, item)
-            )
 
     def _attrs_match(self, attrs):
         """多值匹配法检查属性值是否匹配（包含）"""
@@ -222,9 +210,6 @@ class Tag:
         if v is None:
             k, v = self.attrs.popitem()
         return 'Tag: %s, %s=%s' % (self.name or 'string', k, v)
-
-    def __len__(self):
-        return len(self.contents)
 
 
 class Parsing:

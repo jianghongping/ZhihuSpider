@@ -50,25 +50,31 @@ class Document:
     @classmethod
     def item2html(cls, cont, meta):
         mushroom = html.Mushroom(cont, meta, css_output=config.get_setting('running/css_output'))
-        with open(format_file_name('html', meta.author, meta.title), 'w', encoding='utf8') as foo:
+        with open(format_file_name('html', meta.title, str(meta.voteup), meta.author), 'w',
+                  encoding='utf8') as foo:
             mushroom.write_down(foo)
         if config.get_setting('running/css_output'):
             stylesheets = mushroom.output_css_code()
             for css in stylesheets:
-                with open(format_file_name('css', css['file_name']), 'w', encoding='utf8') as foo:
+                with open(format_file_name('css', css['file_name']), 'w',
+                          encoding='utf8') as foo:
                     foo.write(css['code'])
         return mushroom
 
     @classmethod
     def item2md(cls, cont, meta):
         md = markdown.Markdown(cont, meta)
-        with open(format_file_name('md', meta.author, meta.title), 'w', encoding='utf8') as foo:
+        with open(format_file_name('md', meta.title, str(meta.voteup), meta.author, ),
+                  'w', encoding='utf8') as foo:
             md.write_down(foo)
         return md
 
     @classmethod
     def make_document(cls, meta, cont):
         """根据所给的cont和meta生成html或markdown文件"""
+        if cont is None or cont == '':
+            return
+
         if config.get_setting('running/file_type') == cls.DEFAULT_TYPE:
             doc = cls.item2html(cont, meta)
         else:
@@ -80,7 +86,7 @@ class Document:
 
     @classmethod
     def show_info(cls, meta):
-        print('{:>5d}\t{}\t{}'.format(cls.index, meta.title, meta.author))
+        print('{:>5d}\t{:>5d}\t{}\t{}'.format(cls.index, meta.voteup, meta.title, meta.author))
         cls.index += 1
 
 

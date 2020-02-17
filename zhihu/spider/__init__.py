@@ -14,7 +14,7 @@ item_map = {
     'question': [r'https?://www.zhihu.com/question/(\d+)$'],
     'user_answers': [r'https?://www.zhihu.com/people/([^/]+)/answers$'],
     'user_articles': [r'https?://www.zhihu.com/people/([^/]+)/posts$'],
-    'collection': [r'https?://www.zhihu.com/collection/(\d+)(?:\?page=\d+)$']
+    'collection': [r'https?://www.zhihu.com/collection/(\d+)(?:\?page=\d+)?$']
 }
 
 

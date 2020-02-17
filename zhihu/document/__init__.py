@@ -91,7 +91,10 @@ class Document:
 
 
 def format_path(path):
-    return re.sub(r'[\\/:*?"<>|]', '#', path)
+    def stg(r):
+        return {':': '：', '?': '？'}.get(r.group(0), '+')
+
+    return re.sub(r'[\\/:*?"<>|]', stg, path)
 
 
 def format_file_name(suffix, *part_name):

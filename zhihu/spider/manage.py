@@ -4,7 +4,6 @@ import re
 import zhihu.timer as timer
 from zhihu.conf import config
 from zhihu.document import Meta, Document
-from zhihu.document.html import Parsing
 from zhihu.spider.core import *
 from zhihu.spider.core import Crawler
 
@@ -242,60 +241,23 @@ class CollectionManage(ItemManage):
             yield func(resp.text)
 
     def handle_data(self, data):
-        if data.get_attrs('data-type') in ('Post', 'Answer'):
-            super(CollectionManage, self).handle_data(data)
-
-    @classmethod
-    def parse_data(cls, data):
-        meta = Meta(pattern=Meta.simple)
-
-        title = data.find('h2', _class='zm-item-title')
-        try:
-            meta.title = title.string
-        except AttributeError:
-            print(data)
-            raise AttributeError
-        original_url = title.find('a').get_attrs('href')
-
-        if data.get_attrs('data-type') == 'Answer':
-            head = data.find('div', _class='answer-head')
-            original_url = config.get_setting('API/host') + original_url
-        else:
-            head = data.find('div', _class='post-head')
-
-        meta.original_url = original_url
-
-        try:
-            author = head.find('a', _class='author-link')
-            meta.author = author.string
-            meta.author_homepage = config.get_setting('API/host') + author.get_attrs('href')
-        except AttributeError:
-            try:
-                author = head.find('span', _class='name')
-                meta.author = author.string
-                meta.author_homepage = config.get_setting('API/host') + author.get_attrs('href')
-            except AttributeError:
-                raise
-
-        meta.voteup = int(head.find('div', _class='zm-item-vote-info').get_attrs('data-votecount'))
-
-        # <meta itemprop="post-id" content="107121832">
-        # <meta itemprop="answer-id" content="107121832">
-        # https://www.zhihu.com/node/AnswerVoteInfoV2?params={"answer_id":"203923119"}
-        # https://www.zhihu.com/node/ColumnPostVoteInfoV2?params={"post_id":"103306156"}
-
-        def stg(r):
-            return {'&quot;': '"', '&lt;': '<', '&gt;': '>'}.get(r.group(0), '')
-
-        return meta, re.sub(
-            '(&quot;)|(&lt;)|(&gt;)', stg, data.find('textarea', _class='content').string)
+        {'answer': answer, 'article': article}.get(data.get('type'))(data.get('id'))
 
     def run(self):
         def init_data(htm):
-            htm = Parsing().parse_tag(htm)
-            for t in htm:
-                if t.name == 'html':
-                    return {'data': t.find_all('div', _class="zm-item")}
+            answers = re.findall(
+                r'<link itemprop="url" href="/question/\d+/answer/(\d+)">', htm)
+            articles = re.findall(
+                r'<link itemprop="url" href="https://zhuanlan.zhihu.com/p/(\d+)">', htm)
+
+            resource = list()
+            for ans in answers:
+                resource.append({'type': 'answer', 'id': ans})
+
+            for art in articles:
+                resource.append({'type': 'article', 'id': art})
+
+            return {'data': resource}
 
         self._run(size=-1, func_net=init_data)
 

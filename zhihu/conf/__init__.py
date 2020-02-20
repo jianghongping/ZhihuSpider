@@ -49,9 +49,9 @@ class Config:
     def default_wh(self):
         try:
             # 配置文件中不包含默认路径能保证其正确性，其必然是"Documents\zhihuSpider"
-            bw = self.get_setting('running/default_wh')
-            assert bw != ''
-            return bw
+            dw = self.get_setting('running/default_wh')
+            assert dw != ''
+            return dw
         except (KeyError, AssertionError):
             self.setting('running/default_wh',
                          os.path.join(os.path.expanduser('~'), r'Documents\zhihuSpider'))

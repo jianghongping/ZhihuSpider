@@ -20,6 +20,7 @@ pygments
 ## 使用
 
 在命令行不提供任何参数时默认输出帮助信息, 等同于`zhihu -h`：
+
 ```powershell
 >>>zhihu
 usage: zhihu [-h] [-u U] [-r R] [-w W] [-f F] [-cd] [-cso] [-dg] [--cover]
@@ -42,6 +43,7 @@ optional arguments:
 ```
 
 获取“如何看待2020年非洲蝗虫灾害？”（20190215热榜问题） **前2%** 个答案：
+
 ```powershell
 >>>zhihu -u https://www.zhihu.com/question/371430700
 ```

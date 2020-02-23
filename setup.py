@@ -1,12 +1,12 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 import zhihu
 
 setup(
     name='Zhihu Spider',
     version=zhihu.__version__,
-    keyword=('zhihu', 'spider'),
-    packages=find_packages(),
+    keywords=['zhihu', 'spider'],
+    packages=['zhihu', 'zhihu/spider', 'zhihu/document', 'zhihu/timer', 'zhihu/conf'],
     url='https://github.com/Milloyy/ZhihuSpider',
     license='MIT',
     author='小鬼',
@@ -24,10 +24,10 @@ setup(
         ]
     },
     data_files=[
-        ('zhihu/documen/attachment', ['zhihu/document/attachment/element.html',
-                                      'zhihu/document/attachment/styleCode.css',
-                                      'zhihu/document/attachment/styleMod.css',
-                                      'zhihu/document/attachment/styleText.css'])
+        ('zhihu/document/attachment', ['zhihu/document/attachment/element.html',
+                                       'zhihu/document/attachment/styleCode.css',
+                                       'zhihu/document/attachment/styleMod.css',
+                                       'zhihu/document/attachment/styleText.css'])
     ],
     zip_safe=False
 )

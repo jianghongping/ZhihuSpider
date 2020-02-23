@@ -49,6 +49,7 @@ def make_python_code(config_dict, resource_file):
 def to_file(func):
     def decorate():
         func()
+        config['running']['default_wh'] = ''
         make_python_code(config_dict=config, resource_file='config.py')
 
     return decorate

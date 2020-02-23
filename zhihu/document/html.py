@@ -157,7 +157,7 @@ class Tag:
         except AttributeError:
             attrs = kwargs
 
-        for key in attrs.keys():
+        for key in list(attrs.keys()):
             if re.match('_[^_]+|[^_]+_', key):
                 attrs[key.strip('_')] = attrs[key]
                 del attrs[key]

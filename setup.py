@@ -15,7 +15,7 @@ setup(
     platforms='win10',
     install_requires=[
         'pygments>=2.3.1',
-        'requests'
+        'requests>=2.22.0'
     ],
     scripts=[],
     entry_points={

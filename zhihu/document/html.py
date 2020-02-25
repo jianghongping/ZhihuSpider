@@ -679,7 +679,7 @@ class Formatter(TagGenerate):
         """处理a标签，视频、卡片链接、广告、普通链接"""
         if tag.find('a', attrs={'class': 'video-box'}) is not None:
             return self._make_video_box(tag)
-        elif tag.find('a', attrs={'type': 'link-card'}) is not None:
+        elif tag.find('a', attrs={'data-draft-type': 'link-card'}) is not None:
             return self._make_link_card(tag)
         elif tag.find('a', attrs={'data-draft-type': 'mcn-link-card'}) is not None:
             # 广告，tag自动过滤None

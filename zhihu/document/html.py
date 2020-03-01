@@ -731,7 +731,8 @@ class Formatter(TagGenerate):
     @classmethod
     def highlight_code(cls, code_text, language, theme='default'):
         def stg(r):
-            return {'&quot;': '"', '&#39;': "'", '&lt;': '<', '&gt;': '>'}.get(r.group(0), '')
+            return {'&quot;': '"', '&#34;': '"', '&amp;': '&', '&#38': '&',
+                    '&lt;': '<', '&#60': '<', '&gt;': '>', '&gt': '>'}.get(r.group(0), '')
 
         return '<pre>%s</pre>' % highlight(
             re.sub(r'(</?(\w+)[^<>]*>)|(&quot;)|(&[\w#]+;)', stg, code_text),

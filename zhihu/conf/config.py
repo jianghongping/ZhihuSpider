@@ -26,9 +26,7 @@ config = {
              'totals_reg': '"articles_count":\\s*(\\d+)',
              },
          'Crawler': {
-             'user-agent': {
-                 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36',
-                 },
+             'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36'
              },
          'QuestionManage': {
              'Chinese_reg': '[\\u4e00-\\u9fa5]',

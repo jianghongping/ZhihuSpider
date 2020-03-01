@@ -1,5 +1,6 @@
 import os
 import re
+from http import cookiejar
 
 import requests
 from requests import HTTPError
@@ -113,15 +114,27 @@ class API:
         return cls.get_url(item_name, None, **kwargs)
 
 
-class Crawler(requests.Session, API):
+class Crawler(API):
     UA = config.get_setting('Crawler/user-agent')
 
     def __init__(self):
         super().__init__()
-        self.headers.update(Crawler.UA)
+        self.session = requests.Session()
+        self.session.headers.update({'User-Agent': Crawler.UA})
+        try:
+            mod = __import__('zhihu.spider.login', None, None, ['__all__'])
+            ckf = getattr(mod, 'cookies_file')
+            self.session.cookies = cookiejar.LWPCookieJar(filename=ckf)
+            self.session.cookies.load()
+        except (FileNotFoundError, ImportError, AttributeError) as e:
+            print(e)
+            pass
+
+    def __del__(self):
+        self.session.close()
 
     def get_network_data_package(self, item_name, item_id, **kwargs):
-        resp = self.get(self.get_url(item_name, item_id, **kwargs), timeout=30)
+        resp = self.session.get(self.get_url(item_name, item_id, **kwargs), timeout=30)
         try:
             resp.raise_for_status()
         except HTTPError:
@@ -133,7 +146,7 @@ class Crawler(requests.Session, API):
         return resp
 
     def download(self, url, **kwargs):
-        return self.get(url, timeout=30, **kwargs)
+        return self.session.get(url, timeout=30, **kwargs)
 
     @classmethod
     def cached_network_data(cls, data, item_name, item_id, **kwargs):

@@ -4,6 +4,7 @@ import sys
 
 import zhihu.spider
 from zhihu.conf import config
+from zhihu.spider import login
 
 
 def main():
@@ -19,7 +20,9 @@ def main():
     parser.add_argument('-cd', action='store_true', help='缓存原始数据')
     parser.add_argument('-cso', action='store_true', help='输出css文件')
     parser.add_argument('-dg', action='store_true', help='下载图片')
-    parser.add_argument('--cover', action='store_true', help='覆盖同名文件')
+    parser.add_argument('-cover', '-cv', action='store_true', help='覆盖同名文件')
+    parser.add_argument('-log', '--login', action='store_true', help='登录知乎，以防反爬虫(当次有效)')
+    parser.add_argument('-log2', '--login-long', action='store_true', help='登录知乎，以防反爬虫(长期有效)')
 
     parser.add_argument('-v', action='version', version='%(prog)s {}'.format(zhihu.__version__))
     parser.add_argument('-version', action='version',
@@ -27,7 +30,11 @@ def main():
 
     args = parser.parse_args()
 
-    if args.u is None and args.r is None:
+    print(args)
+
+    if args.login or args.login_long:
+        pass
+    elif args.u is None and args.r is None:
         print('请输入url！')
         sys.exit(0)
 
@@ -69,10 +76,21 @@ def main():
     config.setting('running/download_image', args.dg)
     config.setting('running/cover', args.cover)
 
+    if args.login:
+        with login.ZhihuAccount() as acc:
+            acc.login_up()
+
+            for url in urls:
+                zhihu.spider.start(url)
+    elif args.login_long:
+        login.ZhihuAccount().login_up()
+
     for url in urls:
         zhihu.spider.start(url)
+
     sys.exit(0)
 
 
 if __name__ == '__main__':
+    sys.argv = ['zhihu', '-log2']
     main()

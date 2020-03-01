@@ -144,4 +144,8 @@ https://www.zhihu.com/answer/900176366
 https://www.zhihu.com/answer/935521241
 https://www.zhihu.com/answer/937938302
 https://www.zhihu.com/answer/935521241
-https://www.zhihu.com/answer/935521241'''
+https://www.zhihu.com/answer/935521241
+
+## 推荐课程：类似卡片式链接，目前可按卡片式链接处理
+
+https://www.zhihu.com/question/40636150/answer/1035060868

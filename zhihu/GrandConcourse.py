@@ -30,7 +30,6 @@ def main():
 
     args = parser.parse_args()
 
-    print(args)
 
     if args.login or args.login_long:
         pass
@@ -76,17 +75,17 @@ def main():
     config.setting('running/download_image', args.dg)
     config.setting('running/cover', args.cover)
 
-    if args.login:
-        with login.ZhihuAccount() as acc:
-            acc.login_up()
+    acc = None
 
-            for url in urls:
-                zhihu.spider.start(url)
-    elif args.login_long:
-        login.ZhihuAccount().login_up()
+    if args.login or args.login_long:
+        acc = login.ZhihuAccount()
+        acc.login_up()
 
     for url in urls:
         zhihu.spider.start(url)
+    
+    if args.login:
+        acc.login_out()
 
     sys.exit(0)
 

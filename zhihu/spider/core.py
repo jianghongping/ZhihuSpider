@@ -127,7 +127,6 @@ class Crawler(API):
             self.session.cookies = cookiejar.LWPCookieJar(filename=ckf)
             self.session.cookies.load()
         except (FileNotFoundError, ImportError, AttributeError) as e:
-            print(e)
             pass
 
     def __del__(self):

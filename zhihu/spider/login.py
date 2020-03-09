@@ -42,6 +42,12 @@ class ZhihuAccount:
         except FileNotFoundError:
             pass
 
+    def __del__(self):
+        try:
+            os.remove(os.path.abspath('QR.jpg'))
+        except FileNotFoundError:
+            pass
+
     def login_up(self):
         if self.login_status() == ZhihuAccount.LOGIN_UP:
             print('已登录！')
@@ -75,18 +81,14 @@ class ZhihuAccount:
 
     def __login(self):
         try:
-
             self.session.get("https://www.zhihu.com/signup?next=%2F",
                              headers=ZhihuAccount.BASE_HEAD)
-
             captcha_head = {"Referer": "https://www.zhihu.com/"}
             captcha_head.update(ZhihuAccount.BASE_HEAD)
-
             self.session.get("https://www.zhihu.com/api/v3/oauth/captcha?lang=en",
                              headers=captcha_head)
 
             resp = self.session.post("https://www.zhihu.com/udid", headers=ZhihuAccount.BASE_HEAD)
-
             token_head = {
                 'Origin': 'https://www.zhihu.com',
                 'Referer': 'https://www.zhihu.com/signup?next=%2F',
@@ -101,9 +103,8 @@ class ZhihuAccount:
             qr = self.session.get(
                 f'https://www.zhihu.com/api/v3/account/api/login/qrcode/{token}/image',
                 headers=token_head)
-            with open('QR.jpg', 'wb') as foo:
-                foo.write(qr.content)
-            self.__show_qr_code(os.path.abspath('QR.jpg'))
+
+            self.__show_qr_code(qr.content)
 
             print('操作系统已使用关联程序显示二维码，请使用知乎APP扫描。\n'
                   '小提示：知乎APP扫码特别慢，建议使用微信扫描，按屏幕提示继续操作也可登录。\n')
@@ -126,10 +127,14 @@ class ZhihuAccount:
             return False
 
     @staticmethod
-    def __show_qr_code(image_file):
+    def __show_qr_code(image):
         """
         调用系统软件显示图片
         """
+        image_file = os.path.abspath('QR.jpg')
+
+        with open(image_file, 'wb') as foo:
+            foo.write(image)
 
         if platform.system() == 'Darwin':
             os.subprocess.call(['open', image_file])
@@ -139,6 +144,7 @@ class ZhihuAccount:
             os.startfile(image_file)
 
     def __enter__(self):
+        self.login_up()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):

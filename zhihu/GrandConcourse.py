@@ -30,7 +30,6 @@ def main():
 
     args = parser.parse_args()
 
-
     if args.login or args.login_long:
         pass
     elif args.u is None and args.r is None:
@@ -83,7 +82,7 @@ def main():
 
     for url in urls:
         zhihu.spider.start(url)
-    
+
     if args.login:
         acc.login_out()
 

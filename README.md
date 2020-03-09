@@ -17,33 +17,36 @@ pygments
 
 3. 安装后**支持命令行运行**。
 
+4. 支持登录知乎账号，出现网络错误后可尝试登录。
+
 ## 使用
 
-在命令行不提供任何参数时默认输出帮助信息, 等同于`zhihu -h`：
+在命令行输入`zhihu -h`获得帮助信息：
 
 ```powershell
->>>zhihu
-usage: zhihu [-h] [-u U] [-r R] [-w W] [-f F] [-cd] [-cso] [-dg] [--cover]
-             [-v] [-version]
+>>>zhihu -h
+usage: zhihu [-u U] [-r R] [-w W] [-f F] [-cd] [-cso] [-dg] [-cv] [-log]
+             [-log2] [-v] [-h]
 
 Zhihu Spider
 
 optional arguments:
-  -h, --help  show this help message and exit
-  -u U        项目url，多个用"$"分割
-  -r R        url文本文件，换行分割
-  -w W        文件保存位置
-  -f F        文件输出类型(html/markdown)
-  -cd         缓存原始数据
-  -cso        输出css文件
-  -dg         下载图片
-  --cover     覆盖同名文件
-  -v          show program's version number and exit
-  -version    show program's version number and exit
+  -u U                 项目url，多个用"$"分割
+  -r R                 url文本文件，换行分割
+  -w W                 文件保存位置
+  -f F                 文件输出类型(html/markdown)
+  -cd                  缓存原始数据
+  -cso                 输出css文件
+  -dg                  下载图片
+  -cv, --cover         覆盖同名文件
+  -log, --login        模拟登录知乎，可能解决网络问题(当次有效)
+  -log2, --login-long  模拟登录知乎，可能解决网络问题(长期有效)
+  -v, --version        版本信息
+  -h, --help           帮助
 ```
 
-获取“如何看待2020年非洲蝗虫灾害？”（20190215热榜问题） **前2%** 个答案：
+获取“如何看待2020年非洲蝗虫灾害？”（20190215热榜问题） **前2%** 个答案并下载答案中的图片：
 
 ```powershell
->>>zhihu -u https://www.zhihu.com/question/371430700
+>>>zhihu -u https://www.zhihu.com/question/371430700 -dg
 ```

@@ -8,10 +8,7 @@ from zhihu.spider import login
 
 
 def main():
-    if len(sys.argv) == 1:
-        sys.argv.append('-h')
-
-    parser = argparse.ArgumentParser(description='Zhihu Spider')
+    parser = argparse.ArgumentParser(description='Zhihu Spider', add_help=False)
 
     parser.add_argument('-u', action='store', help='项目url，多个用"$"分割')
     parser.add_argument('-r', action='store', help='url文本文件，换行分割')
@@ -20,17 +17,24 @@ def main():
     parser.add_argument('-cd', action='store_true', help='缓存原始数据')
     parser.add_argument('-cso', action='store_true', help='输出css文件')
     parser.add_argument('-dg', action='store_true', help='下载图片')
-    parser.add_argument('-cover', '-cv', action='store_true', help='覆盖同名文件')
-    parser.add_argument('-log', '--login', action='store_true', help='登录知乎，以防反爬虫(当次有效)')
-    parser.add_argument('-log2', '--login-long', action='store_true', help='登录知乎，以防反爬虫(长期有效)')
+    parser.add_argument('-cv', '--cover', action='store_true', help='覆盖同名文件')
+    parser.add_argument('-log', '--login', action='store_true', help='模拟登录知乎，可能解决网络问题(当次有效)')
+    parser.add_argument('-log2', '--login-long', action='store_true', help='模拟登录知乎，可能解决网络问题(长期有效)')
 
-    parser.add_argument('-v', action='version', version='%(prog)s {}'.format(zhihu.__version__))
-    parser.add_argument('-version', action='version',
-                        version='%(prog)s {}'.format(zhihu.__version__))
+    parser.add_argument('-v', '--version', action='store_true', help='版本信息')
+    parser.add_argument('-h', '--help', action='store_true', help='帮助')
 
     args = parser.parse_args()
 
+    if args.help:
+        parser.print_help()
+        sys.exit(0)
+    if args.version:
+        print('zhihu %s 本地化收藏知乎优质内容' % zhihu.__version__)
+        sys.exit(0)
+
     if args.login or args.login_long:
+        # 仅登录账号或临时登录以退出账号
         pass
     elif args.u is None and args.r is None:
         print('请输入url！')
@@ -90,5 +94,5 @@ def main():
 
 
 if __name__ == '__main__':
-    sys.argv = ['zhihu', '-log2']
+    sys.argv = ['zhihu', '-u', 'https://www.zhihu.com/question/371430700', '-dg']
     main()

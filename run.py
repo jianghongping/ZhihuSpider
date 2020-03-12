@@ -13,4 +13,4 @@ config.setting('running/download_image', False)
 config.setting('running/cover', False)
 
 # ### 启动爬虫 #### #
-zhihu.spider.start(r'https://www.zhihu.com/question/371430700')
+zhihu.spider.start(r'https://zhuanlan.zhihu.com/p/39536876')

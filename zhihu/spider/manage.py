@@ -171,6 +171,9 @@ class ColumnManage(ArticleManage):
 
     def handle_data(self, data):
         article(data.get('id', None))
+    
+    def run(self):
+        self._run(size=-1)
 
 
 class UserMetaManage(ItemManage):

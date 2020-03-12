@@ -44,7 +44,7 @@ class Document:
                 os.makedirs(path)
             with open(os.path.join(path, file_name), 'wb') as foo:
                 foo.write(cra.download(image_url).content)
-                print('{:<4d}\t{}'.format(index, file_name))
+                print('{:<8}\t{}'.format(str(cls.index) + '-' + str(index), file_name))
                 index += 1
 
     @classmethod
@@ -80,14 +80,16 @@ class Document:
         else:
             doc = cls.item2md(cont, meta)
 
+        cls.show_info(meta)
+
         if config.get_setting('running/download_image'):
             cls.download_image(doc)
-        cls.show_info(meta)
+            print('-'*53 + '\n')
+        cls.index += 1
 
     @classmethod
     def show_info(cls, meta):
-        print('{:>5d}\t{:>5d}\t{}\t{}'.format(cls.index, meta.voteup, meta.title, meta.author))
-        cls.index += 1
+        print('{:<8}\t{:<5}\t{}\t{}'.format(cls.index, meta.voteup, meta.title, meta.author))
 
 
 def format_path(path):
